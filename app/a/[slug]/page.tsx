@@ -35,6 +35,7 @@ export default function FriendReviewPage() {
   const [sessionError, setSessionError] = useState("");
   const [isSavingReview, setIsSavingReview] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
 
   useEffect(() => {
     async function loadAuraSession() {
@@ -130,6 +131,42 @@ export default function FriendReviewPage() {
     setSelectedAnswers([]);
     setReviewError("");
     setIsSavingReview(false);
+  }
+
+  function showCopyMessage(message: string) {
+    setCopyMessage(message);
+  
+    window.setTimeout(() => {
+      setCopyMessage("");
+    }, 2200);
+  }
+  
+  async function copyFriendLinkAgain() {
+    if (!auraSession) return;
+  
+    const friendLink = `${window.location.origin}/a/${auraSession.share_slug}`;
+  
+    await navigator.clipboard?.writeText(
+      `Responde essa Aura Social também. Quero ver como você lê a vibe de ${auraSession.nickname}: ${friendLink}`
+    );
+  
+    showCopyMessage("Link copiado para mandar para outro amigo.");
+  }
+  
+  function shareFriendLinkOnWhatsApp() {
+    if (!auraSession) return;
+  
+    const friendLink = `${window.location.origin}/a/${auraSession.share_slug}`;
+  
+    const message = `Responde essa Aura Social também.
+  
+  Quero ver como você lê a vibe de ${auraSession.nickname}:
+  ${friendLink}`;
+  
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    showCopyMessage("Abrindo WhatsApp.");
   }
 
   return (
@@ -337,13 +374,21 @@ export default function FriendReviewPage() {
             {step === "done" && perception && (
               <div className="flex flex-1 items-center justify-center py-10">
                 <div className="w-full rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-                  <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-                    resposta registrada
-                  </p>
+                <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
+  você entrou nessa aura
+</p>
 
-                  <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
-                    {perception.summary.title}
-                  </h2>
+<h2 className="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+  Você ajudou essa aura a ganhar energia.
+</h2>
+<div className="mt-5 rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-5">
+  <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-200">
+    sua leitura
+  </p>
+  <p className="mt-3 text-2xl font-black text-white">
+    {perception.summary.title}
+  </p>
+</div>
 
                   <p className="mt-5 text-base leading-7 text-slate-300">
                     {perception.summary.text}
@@ -373,13 +418,14 @@ export default function FriendReviewPage() {
 
 <div className="mt-6 rounded-[2rem] border border-fuchsia-300/20 bg-fuchsia-300/10 p-5">
   <p className="text-sm font-bold uppercase tracking-[0.25em] text-fuchsia-200">
-    como você percebe {auraSession.nickname}
+    energia enviada para {auraSession.nickname}
   </p>
   <p className="mt-3 text-lg font-black text-white">
-    Sua resposta entrou no comparativo da aura. Agora dá para ver como essa
-    pessoa se enxerga e como os amigos estão percebendo a presença dela.
+    Sua resposta entrou no comparativo e ajudou essa aura a ganhar mais leitura
+    social. Agora dá para ver como essa pessoa se enxerga e como a galera está
+    percebendo a presença dela.
   </p>
-</div> 
+</div>
 
                   <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">
@@ -400,18 +446,40 @@ export default function FriendReviewPage() {
 
   <a
     href="/"
-    className="rounded-2xl border border-white/15 bg-white/10 px-6 py-4 text-center text-base font-black text-white transition hover:bg-white/15"
+    className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/10 px-6 py-4 text-center text-base font-black text-fuchsia-100 transition hover:bg-fuchsia-300/15"
   >
-    Fazer minha aura
+    Farmar minha aura
   </a>
 </div>
+
+<div className="mt-3 grid gap-3 sm:grid-cols-2">
+  <button
+    onClick={copyFriendLinkAgain}
+    className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-6 py-4 text-base font-black text-cyan-100 transition hover:bg-cyan-300/15"
+  >
+    Chamar outro amigo
+  </button>
+
+  <button
+    onClick={shareFriendLinkOnWhatsApp}
+    className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-6 py-4 text-base font-black text-emerald-100 transition hover:bg-emerald-300/15"
+  >
+    WhatsApp
+  </button>
+</div>
+
+{copyMessage && (
+  <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-5 py-4 text-center">
+    <p className="font-bold text-emerald-100">{copyMessage}</p>
+  </div>
+)}
 
 <button
   onClick={restart}
   className="mt-3 w-full rounded-2xl border border-white/10 px-6 py-4 text-base font-bold text-slate-300 transition hover:bg-white/5"
 >
   Responder de novo
-</button>
+</button> 
                 </div>
               </div>
             )}
