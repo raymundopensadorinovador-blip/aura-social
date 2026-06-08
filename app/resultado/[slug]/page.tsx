@@ -209,7 +209,7 @@ export default function AuraResultPage() {
     const link = `${window.location.origin}/a/${auraSession.share_slug}`;
   
     navigator.clipboard?.writeText(
-      `Minha Aura Social saiu: ${auraSession.aura_name}. Agora quero ver como você me percebe. Responde aqui: ${link}`
+      `Farmei minha Aura Social: ${auraSession.aura_name}. Quero ver como você lê minha vibe. Responde aqui: ${link}`
     );
   
     showCopyMessage("Link para amigos copiado.");
@@ -221,7 +221,7 @@ export default function AuraResultPage() {
     const link = `${window.location.origin}/resultado/${auraSession.share_slug}`;
   
     navigator.clipboard?.writeText(
-      `Veja o comparativo da minha Aura Social: ${link}`
+      `Olha a leitura da minha Aura Social: ${link}`
     );
   
     showCopyMessage("Link do comparativo copiado.");
@@ -295,7 +295,7 @@ export default function AuraResultPage() {
               Aura Social
             </p>
             <h1 className="mt-1 text-lg font-black tracking-tight text-white">
-              Comparativo de aura
+            Leitura da galera
             </h1>
           </div>
 
@@ -358,7 +358,7 @@ export default function AuraResultPage() {
             <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
                 <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-                  como você se vê
+                  sua carta
                 </p>
 
                 <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
@@ -404,7 +404,7 @@ export default function AuraResultPage() {
     onClick={copyFriendLink}
     className="rounded-2xl bg-white px-5 py-4 font-black text-slate-950 transition hover:scale-[1.01]"
   >
-    Chamar amigos para responder
+    Mandar para a galera
   </button>
 
   <a
@@ -419,7 +419,7 @@ export default function AuraResultPage() {
       onClick={shareResultNative}
       className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/10 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-300/15"
     >
-      Compartilhar comparativo
+      Compartilhar leitura
     </button>
 
     <button
@@ -434,7 +434,7 @@ export default function AuraResultPage() {
     onClick={copyResultLink}
     className="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 font-black text-white transition hover:bg-white/15"
   >
-    Copiar link do comparativo
+    Copiar leitura
   </button>
 </div>      
 
@@ -447,7 +447,7 @@ export default function AuraResultPage() {
 
               <div className="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
                 <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-                  como amigos te veem
+                como a galera te lê
                 </p>
 
                 <h2 className="mt-4 text-4xl font-black tracking-tight">
@@ -543,7 +543,7 @@ export default function AuraResultPage() {
 
 <div className="mt-5 rounded-[2rem] border border-fuchsia-300/20 bg-fuchsia-300/10 p-5">
   <p className="text-sm font-bold uppercase tracking-[0.25em] text-fuchsia-200">
-    ponto de consciência
+  ponto de atenção
   </p>
   <p className="mt-3 text-lg font-black leading-7 text-white">
     {getAwarenessText()}

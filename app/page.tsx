@@ -116,7 +116,7 @@ useEffect(() => {
       if (error) {
         console.error(error);
         setSaveError(
-          "Sua aura apareceu, mas ainda não conseguimos salvar o link. Tente refazer em instantes."
+          "Sua aura apareceu, mas o link ainda não salvou. Tenta de novo daqui a pouco."
         );
       }
   
@@ -197,10 +197,10 @@ useEffect(() => {
       link.href = dataUrl;
       link.click();
   
-      showCopyMessage("Carta salva como imagem.");
+      showCopyMessage("Carta salva na galeria.");
     } catch (error) {
       console.error(error);
-      showCopyMessage("Não conseguimos salvar a carta agora.");
+      showCopyMessage("Não deu para salvar a carta agora.");
     }
   }
 
@@ -224,7 +224,7 @@ useEffect(() => {
           files: [file],
         });
   
-        showCopyMessage("Carta compartilhada.");
+        showCopyMessage("Carta enviada.");
         return;
       }
   
@@ -235,15 +235,15 @@ useEffect(() => {
           url: friendLink,
         });
   
-        showCopyMessage("Link compartilhado.");
+        showCopyMessage("Link enviado.");
         return;
       }
   
       await navigator.clipboard?.writeText(shareText);
-      showCopyMessage("Seu navegador não abriu o compartilhamento. Link copiado.");
+      showCopyMessage("Não abriu o compartilhamento. Copiei o link.");
     } catch (error) {
       console.error(error);
-      showCopyMessage("Não conseguimos compartilhar agora.");
+      showCopyMessage("Não deu para compartilhar agora.");
     }
   }
 
@@ -288,7 +288,7 @@ useEffect(() => {
           </div>
 
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-            beta
+            beta aberto
           </div>
         </header>
 
@@ -342,8 +342,7 @@ useEffect(() => {
 </div>
 
                 <p className="mt-5 text-xs leading-5 text-slate-500">
-                  Experiência leve de autopercepção. Não é teste psicológico,
-                  diagnóstico ou avaliação clínica.
+                É uma experiência leve de autopercepção. Não é teste psicológico, diagnóstico ou avaliação clínica.
                 </p>
                 <div
   id="como-funciona"
@@ -400,7 +399,7 @@ useEffect(() => {
                   <div className="rounded-[1.5rem] bg-[#0D1020] p-5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs uppercase tracking-[0.3em] text-cyan-300">
-                        Carta
+                        Carta farmada
                       </span>
                       <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300">
                         780 pts
@@ -419,7 +418,7 @@ useEffect(() => {
 
                     <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
                       <p className="text-sm text-slate-300">
-                        Missão de hoje:
+                        Missão da vibe:
                       </p>
                       <p className="mt-1 font-bold text-white">
                         Dizer uma coisa verdadeira sem esperar que descubram.
@@ -436,7 +435,7 @@ useEffect(() => {
   <div className="flex flex-1 items-center justify-center py-12">
     <div className="w-full max-w-2xl rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
       <p className="text-sm font-black uppercase tracking-[0.3em] text-cyan-300">
-        aura de hoje revelada
+        aura de hoje já foi
       </p>
 
       <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">
@@ -444,8 +443,7 @@ useEffect(() => {
       </h2>
 
       <p className="mt-5 text-base leading-7 text-slate-300">
-      Volte amanhã para farmar uma nova aura. Enquanto isso, abre seu álbum,
-      manda o link para a galera e vê como seus amigos estão lendo sua vibe.
+      Hoje já deu farm. Volta amanhã para puxar uma nova aura. Enquanto isso, abre o álbum, manda o link para a galera e vê como estão lendo sua vibe.
       </p>
 
       <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -463,7 +461,7 @@ useEffect(() => {
             href={`/album?aura=${lastAuraType}&slug=${lastAuraSlug}`}
             className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 px-5 py-4 text-center font-black text-yellow-100 transition hover:bg-yellow-300/15"
           >
-            Ver meu álbum
+            Abrir meu álbum
           </a>
         )}
       </div>
@@ -482,20 +480,19 @@ useEffect(() => {
           <div className="flex flex-1 items-center justify-center py-12">
             <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
-                primeiro passo
+                bora começar
               </p>
 
               <h2 className="mt-4 text-4xl font-black tracking-tight">
-                Como você quer aparecer?
+                Qual nome vai aparecer na sua aura?
               </h2>
 
               <p className="mt-4 text-slate-300">
-                Coloque seu nome ou apelido. Sem cadastro agora. A civilização
-                agradece por esse pequeno ato de misericórdia.
+              Hoje já deu farm. Volta amanhã para puxar uma nova aura. Enquanto isso, abre o álbum, manda o link para a galera e vê como estão lendo sua vibe.
               </p>
 
               <label className="mt-8 block text-sm font-bold text-slate-200">
-                Seu apelido
+                Nome ou apelido
               </label>
 
               <input
@@ -581,10 +578,10 @@ useEffect(() => {
 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
   <div>
     <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-      carta para compartilhar
+      carta para postar
     </p>
     <p className="mt-2 text-sm leading-6 text-slate-400">
-      Versão mais limpa para salvar, postar no story ou enviar para amigos.
+    Salve, mande no WhatsApp ou jogue no story. A carta já nasceu querendo aparecer.
     </p>
   </div>
 
@@ -634,7 +631,7 @@ useEffect(() => {
                   }}
                   className="rounded-2xl bg-white px-5 py-4 font-black text-slate-950 transition hover:scale-[1.01]"
                 >
-                  Copiar minha aura
+                  Copiar carta
                 </button>
 
                 <button
@@ -645,12 +642,12 @@ useEffect(() => {
                       `Farmei minha Aura Social: ${result.aura.name}. Agora quero ver como você lê minha vibe. Responde aqui: ${futureLink}`
                     );
 
-                    showCopyMessage("Link para amigos copiado.");
+                    showCopyMessage("Link da vibe copiado.");
                   }}
                   disabled={isSaving || !!saveError || !auraSlug}
                   className="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Copiar link para amigos
+                  Mandar para a galera
                 </button>
               </div>
 
@@ -662,14 +659,14 @@ useEffect(() => {
                     : ""
                 }`}
               >
-                Ver comparativo da minha aura
+                Ver leitura da galera
               </a>
 
               <a
   href={`/album?aura=${result.aura.id}&slug=${auraSlug}`}
   className="mt-3 block rounded-2xl border border-yellow-300/20 bg-yellow-300/10 px-5 py-4 text-center font-black text-yellow-100 transition hover:bg-yellow-300/15"
 >
-  Ver álbum de auras
+  Abrir álbum de auras
 </a> 
 
               {copyMessage && (
@@ -682,7 +679,7 @@ useEffect(() => {
                 onClick={restart}
                 className="mt-4 w-full rounded-2xl border border-white/10 px-5 py-4 font-bold text-slate-300 transition hover:bg-white/5"
               >
-                Refazer teste
+                Tentar de novo
               </button>
             </div>
           </div>

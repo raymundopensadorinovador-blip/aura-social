@@ -461,18 +461,15 @@ setIsLoadingHexaProgress(false);
         <div className="py-10">
           <div className="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-cyan-300">
-              coleção inicial
+              seu álbum
             </p>
 
             <h2 className="mt-4 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">
-              Cole suas auras e desbloqueie cartas especiais.
+              Cole suas cartas, carregue energia e libere raras.
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
-              Cada aura revelada pode virar uma figurinha no seu álbum. As cartas
-              principais formam sua coleção base. As especiais aparecem em
-              eventos, missões e desafios. Sim, agora até autopercepção tem
-              álbum, porque aparentemente figurinhas venceram a filosofia.
+            Cada aura farmada pode virar figurinha no álbum. Quanto mais você cola, mais energia carrega. As cartas especiais aparecem por missão, evento e presença no app. 
             </p>
           </div>
 
@@ -489,12 +486,11 @@ setIsLoadingHexaProgress(false);
         </p>
 
         <h3 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-          Aura carregando...
+          Energia subindo...
         </h3>
 
         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-          Cada figurinha colada aumenta a energia do seu álbum. A Aura do Hexa
-          entra como carta especial e conta como energia rara.
+        Cada figurinha colada aumenta sua energia no álbum. A Aura do Hexa entra como carta especial e pesa mais na coleção.
         </p>
       </div>
 
@@ -521,7 +517,7 @@ setIsLoadingHexaProgress(false);
 
       <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500">
         <span>início</span>
-        <span>aura máxima</span>
+        <span>full aura</span>
       </div>
     </div>
 
@@ -533,7 +529,7 @@ setIsLoadingHexaProgress(false);
         <p className="mt-2 text-xl font-black text-white">
           {pastedAuras.length}/{auraTypes.length}
         </p>
-        <p className="mt-1 text-xs text-slate-400">auras principais</p>
+        <p className="mt-1 text-xs text-slate-400">cartas base</p>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -563,7 +559,7 @@ setIsLoadingHexaProgress(false);
                 ? "Em expansão"
                 : "Começando"}
         </p>
-        <p className="mt-1 text-xs text-slate-400">energia atual</p>
+        <p className="mt-1 text-xs text-slate-400">nível atual</p>
       </div>
     </div>
   </div>
@@ -659,18 +655,15 @@ setIsLoadingHexaProgress(false);
 
     <div>
       <p className="text-sm font-bold uppercase tracking-[0.3em] text-yellow-200">
-        slot mais desejado
+      carta mais disputada
       </p>
 
       <h3 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
-        A Aura do Hexa será a carta especial do Brasil 2026.
+      A Aura do Hexa é a carta especial do Brasil 2026.
       </h3>
 
       <p className="mt-4 leading-7 text-slate-300">
-        Essa carta não entra no sorteio comum. Ela será desbloqueada por missão
-        especial, pontos de aura ou participação dos amigos. A ideia é ela parecer
-        rara, desejada e temporária, não só mais uma carta largada no meio do álbum
-        como panfleto de mercado.
+      Essa carta não cai fácil. Para liberar, você precisa chamar a galera, farmar pontos e voltar em dias diferentes. Rara de verdade não vem de graça.
       </p>
 
       {isHexaUnlocked && (
@@ -686,7 +679,7 @@ setIsLoadingHexaProgress(false);
         isHexaPasted ? "text-yellow-100" : "text-emerald-100"
       }`}
     >
-      {isHexaPasted ? "figurinha especial colada" : "carta liberada"}
+      {isHexaPasted ? "especial colada" : "carta liberada"}
     </p>
     <p
       className={`mt-2 text-sm leading-6 ${
@@ -694,8 +687,8 @@ setIsLoadingHexaProgress(false);
       }`}
     >
       {isHexaPasted
-        ? "A Aura do Hexa já está colada como carta especial no seu álbum."
-        : "A Aura do Hexa foi desbloqueada. Agora você pode colar essa figurinha especial no álbum."}
+        ? "A Aura do Hexa já está colada no seu álbum. Essa é para deixar em destaque."
+        : "A Aura do Hexa foi liberada. Agora é só colar a especial no álbum."}
     </p>
   </div>
 )}  
@@ -703,35 +696,32 @@ setIsLoadingHexaProgress(false);
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 p-4">
           <p className="text-sm font-black text-yellow-100">
-            Como pode desbloquear
+            Como liberar
           </p>
           <p className="mt-2 text-sm leading-6 text-yellow-100/80">
           Nessa aura: {Math.min(hexaFriendCount, 3)}/3 amigos responderam,{" "}
 {Math.min(hexaAuraPoints, HEXA_POINTS_TARGET)}/{HEXA_POINTS_TARGET} pontos foram farmados e{" "}
-{Math.min(presenceDays, 3)}/3 dias de presença foram registrados. 
+{Math.min(presenceDays, 3)}/3 dias de presença foram registrados.
           </p>
         </div>
 
         <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
           <p className="text-sm font-black text-cyan-100">
-            Por que ela fica bloqueada
+            Por que tem trava
           </p>
           <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-            Para criar desejo, retorno e sensação de conquista. Raro sem esforço
-            vira só decoração.
+          Porque carta rara precisa de missão. Se liberar fácil, vira enfeite e perde graça.
           </p>
         </div>
       </div>
 
       <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
         <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-          missão de desbloqueio
+          missão para liberar
         </p>
 
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          A Aura do Hexa poderá ser liberada como carta de evento: disponível por
-          tempo limitado, com missão especial e destaque permanente no álbum de quem
-          desbloquear.
+        Complete as missões para liberar a carta especial. Depois de colada, ela fica como destaque no álbum.
         </p>
 
         <div className="mt-5 grid gap-3">
@@ -773,10 +763,10 @@ setIsLoadingHexaProgress(false);
     }`}
   >
   {isSavingAura
-  ? "Colando Aura do Hexa..."
+  ? "Colando especial..."
   : isHexaPasted
-    ? "✓ Aura do Hexa colada no álbum"
-    : "Colar Aura do Hexa no álbum"}  
+    ? "✓ Especial colada no álbum"
+    : "Colar especia no álbum"}  
   </button>
 ) : (
   <button
@@ -798,7 +788,7 @@ setIsLoadingHexaProgress(false);
         ? "Missão feita: pontos farmados"
         : presenceDays >= 3
           ? "Missão feita: presença garantida"
-          : "Aura do Hexa bloqueada"}  
+          : "Hexa ainda bloqueada"}  
   </button>
 )} 
       </div>
@@ -813,7 +803,7 @@ setIsLoadingHexaProgress(false);
                   auras principais
                 </p>
                 <h3 className="mt-2 text-3xl font-black text-white">
-                  Coleção base
+                  Cartas base
                 </h3>
               </div>
 
@@ -897,7 +887,7 @@ setIsLoadingHexaProgress(false);
   ? "✓ Figurinha colada"
   : isHighlighted
     ? "Aura recém-revelada"
-    : "Ainda não colada"}  
+    : "Slot vazio"}  
   </p>
 
   <p
@@ -910,10 +900,10 @@ setIsLoadingHexaProgress(false);
     }`}
   >
   {isPasted
-  ? "Essa aura já está colada. Toque na carta para reenviar o link ou ver o comparativo."
+  ? "Já está colada. Toque na carta para mandar o link de novo ou ver a leitura da galera."
   : isHighlighted
-    ? "Essa é a aura que saiu no seu teste. Você pode colar essa figurinha agora."
-    : "Revele essa aura para colar a figurinha neste espaço."}  
+    ? "Essa foi a carta que você farmou. Cola ela no álbum agora."
+    : "Farme essa aura para ocupar esse slot."}  
   </p>
 
   {isHighlighted && !isPasted && (
@@ -925,7 +915,7 @@ setIsLoadingHexaProgress(false);
     disabled={isSavingAura}
     className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
   >
-    {isSavingAura ? "Colando..." : "Colar figurinha"}
+    {isSavingAura ? "Colando..." : "Colar carta"}
   </button>
 )}  
 
@@ -936,8 +926,7 @@ setIsLoadingHexaProgress(false);
     </p>
 
     <p className="mt-2 text-sm leading-6 text-cyan-100/80">
-      Reenvie o link dessa aura, veja o comparativo ou chame mais amigos para
-      responderem sua vibe.
+    Mande o link de novo, veja a leitura da galera ou chame mais gente para responder sua vibe.
     </p>
 
     <div className="mt-4 grid gap-2">
@@ -948,7 +937,7 @@ setIsLoadingHexaProgress(false);
         }}
         className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:scale-[1.01]"
       >
-        Chamar amigos de novo
+        Mandar link de novo
       </button>
 
       <button
@@ -967,7 +956,7 @@ setIsLoadingHexaProgress(false);
           onClick={(event) => event.stopPropagation()}
           className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-black text-white transition hover:bg-white/10"
         >
-          Ver comparativo
+          Ver leitura da galera
         </a>
       )}
     </div>
@@ -979,7 +968,7 @@ setIsLoadingHexaProgress(false);
       }}
       className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-cyan-100/80 transition hover:bg-white/5"
     >
-      Fechar ações
+      Fechar
     </button>
   </div>
 )}

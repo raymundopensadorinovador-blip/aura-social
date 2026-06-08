@@ -184,7 +184,7 @@ export default function FriendReviewPage() {
               Aura Social
             </p>
             <h1 className="mt-1 text-lg font-black tracking-tight text-white">
-              Avaliação de amigo
+            Leitura de vibe
             </h1>
           </div>
 
@@ -379,7 +379,7 @@ export default function FriendReviewPage() {
 </p>
 
 <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
-  Você ajudou essa aura a ganhar energia.
+Você carregou essa aura com sua leitura.
 </h2>
 <div className="mt-5 rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-5">
   <p className="text-sm font-black uppercase tracking-[0.25em] text-cyan-200">
@@ -448,7 +448,7 @@ export default function FriendReviewPage() {
     href="/"
     className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/10 px-6 py-4 text-center text-base font-black text-fuchsia-100 transition hover:bg-fuchsia-300/15"
   >
-    Farmar minha aura
+    Farmar minha aura também
   </a>
 </div>
 
@@ -457,7 +457,7 @@ export default function FriendReviewPage() {
     onClick={copyFriendLinkAgain}
     className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-6 py-4 text-base font-black text-cyan-100 transition hover:bg-cyan-300/15"
   >
-    Chamar outro amigo
+    Mandar para outra pessoa
   </button>
 
   <button
@@ -478,7 +478,7 @@ export default function FriendReviewPage() {
   onClick={restart}
   className="mt-3 w-full rounded-2xl border border-white/10 px-6 py-4 text-base font-bold text-slate-300 transition hover:bg-white/5"
 >
-  Responder de novo
+  Responder outra vez
 </button> 
                 </div>
               </div>
