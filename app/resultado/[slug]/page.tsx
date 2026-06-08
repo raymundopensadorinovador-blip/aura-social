@@ -227,6 +227,59 @@ export default function AuraResultPage() {
     showCopyMessage("Link do comparativo copiado.");
   }
 
+  async function shareResultNative() {
+    if (!auraSession) return;
+  
+    const resultLink = `${window.location.origin}/resultado/${auraSession.share_slug}`;
+  
+    const text = `Meu comparativo da Aura Social já começou.
+  
+  Minha aura: ${auraSession.aura_name}
+  "${auraSession.aura_phrase}"
+  
+  Veja aqui:
+  ${resultLink}`;
+  
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Meu comparativo da Aura Social",
+          text,
+          url: resultLink,
+        });
+  
+        showCopyMessage("Comparativo compartilhado.");
+        return;
+      }
+  
+      await navigator.clipboard?.writeText(text);
+      showCopyMessage("Seu navegador não abriu o compartilhamento. Link copiado.");
+    } catch (error) {
+      console.error(error);
+      showCopyMessage("Não conseguimos compartilhar agora.");
+    }
+  }
+
+  function shareResultOnWhatsApp() {
+    if (!auraSession) return;
+  
+    const resultLink = `${window.location.origin}/resultado/${auraSession.share_slug}`;
+  
+    const message = `Meu comparativo da Aura Social já começou.
+  
+  Minha aura: ${auraSession.aura_name}
+  "${auraSession.aura_phrase}"
+  
+  Veja aqui:
+  ${resultLink}`;
+  
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  
+    showCopyMessage("Abrindo WhatsApp.");
+  }
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#090A14] text-slate-50">
       <div className="pointer-events-none fixed inset-0">
@@ -360,6 +413,22 @@ export default function AuraResultPage() {
   >
     Ver álbum de auras
   </a>
+
+  <div className="grid gap-3 sm:grid-cols-2">
+    <button
+      onClick={shareResultNative}
+      className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/10 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-300/15"
+    >
+      Compartilhar comparativo
+    </button>
+
+    <button
+      onClick={shareResultOnWhatsApp}
+      className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 font-black text-emerald-100 transition hover:bg-emerald-300/15"
+    >
+      WhatsApp
+    </button>
+  </div>
 
   <button
     onClick={copyResultLink}

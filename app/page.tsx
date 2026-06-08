@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { toPng } from "html-to-image";
+import { toBlob, toPng } from "html-to-image";
 import {
   type Answer,
   calculateAura,
@@ -98,6 +98,22 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
     }, 2200);
   }
 
+  async function createShareCardFile() {
+    if (!shareCardRef.current || !result) return null;
+  
+    const blob = await toBlob(shareCardRef.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#090A14",
+    });
+  
+    if (!blob) return null;
+  
+    return new File([blob], `aura-social-${result.aura.id}.png`, {
+      type: "image/png",
+    });
+  }
+
   async function saveShareCardAsImage() {
     if (!shareCardRef.current || !result) return;
   
@@ -118,6 +134,68 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
       console.error(error);
       showCopyMessage("Não conseguimos salvar a carta agora.");
     }
+  }
+
+  async function shareAuraCard() {
+    if (!result) return;
+  
+    const friendLink = `${window.location.origin}/a/${auraSlug}`;
+    const shareText = `Minha Aura Social saiu: ${result.aura.name}. Agora quero ver como você me percebe. Responde aqui: ${friendLink}`;
+  
+    try {
+      const file = await createShareCardFile();
+  
+      if (
+        file &&
+        navigator.share &&
+        navigator.canShare?.({ files: [file] })
+      ) {
+        await navigator.share({
+          title: "Minha Aura Social",
+          text: shareText,
+          files: [file],
+        });
+  
+        showCopyMessage("Carta compartilhada.");
+        return;
+      }
+  
+      if (navigator.share) {
+        await navigator.share({
+          title: "Minha Aura Social",
+          text: shareText,
+          url: friendLink,
+        });
+  
+        showCopyMessage("Link compartilhado.");
+        return;
+      }
+  
+      await navigator.clipboard?.writeText(shareText);
+      showCopyMessage("Seu navegador não abriu o compartilhamento. Link copiado.");
+    } catch (error) {
+      console.error(error);
+      showCopyMessage("Não conseguimos compartilhar agora.");
+    }
+  }
+
+  function shareAuraOnWhatsApp() {
+    if (!result) return;
+  
+    const friendLink = `${window.location.origin}/a/${auraSlug}`;
+  
+    const message = `Minha Aura Social saiu: ${result.aura.name}.
+  
+  "${result.aura.phrase}"
+  
+  Agora quero ver como você me percebe. Responde aqui:
+  ${friendLink}`;
+  
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  
+    showCopyMessage("Abrindo WhatsApp.");
   }
 
   const progress = Math.round(((currentQuestion + 1) / questions.length) * 100);
@@ -341,12 +419,30 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
     </p>
   </div>
 
+  <div className="flex flex-wrap gap-2">
+  <button
+    onClick={shareAuraCard}
+    disabled={isSaving || !!saveError || !auraSlug}
+    className="rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-xs font-black text-fuchsia-100 transition hover:bg-fuchsia-300/15 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    Compartilhar
+  </button>
+
+  <button
+    onClick={shareAuraOnWhatsApp}
+    disabled={isSaving || !!saveError || !auraSlug}
+    className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-xs font-black text-emerald-100 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    WhatsApp
+  </button>
+
   <button
     onClick={saveShareCardAsImage}
     className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-black text-cyan-100 transition hover:bg-cyan-300/15"
   >
     Salvar imagem
   </button>
+</div> 
 </div> 
 
   <div ref={shareCardRef}>

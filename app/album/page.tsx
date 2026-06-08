@@ -13,12 +13,21 @@ const specialAura = {
   symbol: "🇧🇷",
   visualTitle: "Brasil 2026",
   gradient: "from-green-400 via-yellow-300 to-blue-600",
+  collectionNumber: "ESP-001",
+  rarity: "Especial",
 };
 
 const LOCAL_ALBUM_KEY = "aura-social-album-key";
 const LOCAL_PASTED_AURAS = "aura-social-pasted-auras";
+const LOCAL_PRESENCE_DAYS = "aura-social-presence-days";
+const LOCAL_HEXA_UNLOCKED = "aura-social-hexa-unlocked";
+const LOCAL_HEXA_PASTED = "aura-social-hexa-pasted";
 
-function generateAlbumKey() {
+function generateAlbumKey(scope?: string | null) {
+  if (scope) {
+    return `album-${scope}`;
+  }
+
   const existingKey = window.localStorage.getItem(LOCAL_ALBUM_KEY);
 
   if (existingKey) {
@@ -34,17 +43,53 @@ function generateAlbumKey() {
   return newKey;
 }
 
-function AlbumContent() {
-    const searchParams = useSearchParams();
-const highlightedAura = searchParams.get("aura");
-const shareSlug = searchParams.get("slug");
+function getScopedStorageKey(baseKey: string, scope: string) {
+  return `${baseKey}-${scope}`;
+}
 
-const [albumKey, setAlbumKey] = useState("");
-const [pastedAuras, setPastedAuras] = useState<string[]>([]);
-const [albumMessage, setAlbumMessage] = useState("");
-const [isSavingAura, setIsSavingAura] = useState(false);
+function AlbumContent() {
+  const searchParams = useSearchParams();
+  const highlightedAura = searchParams.get("aura");
+  const shareSlug = searchParams.get("slug");
+  const storageScope = shareSlug ?? "local";
+const pastedAurasStorageKey = getScopedStorageKey(
+  LOCAL_PASTED_AURAS,
+  storageScope
+);
+const presenceDaysStorageKey = getScopedStorageKey(
+  LOCAL_PRESENCE_DAYS,
+  storageScope
+);
+const hexaUnlockedStorageKey = getScopedStorageKey(
+  LOCAL_HEXA_UNLOCKED,
+  storageScope
+);
+const hexaPastedStorageKey = getScopedStorageKey(
+  LOCAL_HEXA_PASTED,
+  storageScope
+);
   
-    useEffect(() => {
+  const [albumKey, setAlbumKey] = useState("");
+  const [pastedAuras, setPastedAuras] = useState<string[]>([]);
+  const [albumMessage, setAlbumMessage] = useState("");
+  const [isSavingAura, setIsSavingAura] = useState(false);
+  const [hexaFriendCount, setHexaFriendCount] = useState(0);
+const [hexaAuraPoints, setHexaAuraPoints] = useState(0);
+const [presenceDays, setPresenceDays] = useState(0);
+const [isHexaUnlocked, setIsHexaUnlocked] = useState(false);
+const [isHexaPasted, setIsHexaPasted] = useState(false);
+const [isLoadingHexaProgress, setIsLoadingHexaProgress] = useState(false);
+
+const canUnlockHexa =
+hexaFriendCount >= 3 && hexaAuraPoints >= 300 && presenceDays >= 3;
+const totalAlbumCards = auraTypes.length + 1;
+const collectedCards = pastedAuras.length + (isHexaPasted ? 1 : 0);
+const albumEnergyPercent = Math.min(
+  100,
+  Math.round((collectedCards / totalAlbumCards) * 100)
+); 
+
+useEffect(() => {
       if (!highlightedAura) return;
   
       const timer = window.setTimeout(() => {
@@ -62,11 +107,77 @@ const [isSavingAura, setIsSavingAura] = useState(false);
     }, [highlightedAura]);
 
     useEffect(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      const saved = window.localStorage.getItem(presenceDaysStorageKey);
+    
+      let days: string[] = [];
+    
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as string[];
+    
+          if (Array.isArray(parsed)) {
+            days = parsed;
+          }
+        } catch {
+          window.localStorage.removeItem(presenceDaysStorageKey);
+        }
+      }
+    
+      const updatedDays = Array.from(new Set([...days, today]));
+    
+      window.localStorage.setItem(
+        presenceDaysStorageKey,
+        JSON.stringify(updatedDays)
+      ); 
+    
+      setPresenceDays(updatedDays.length);
+    }, [presenceDaysStorageKey]);
+
+    useEffect(() => {
+      const savedUnlocked = window.localStorage.getItem(hexaUnlockedStorageKey);
+      const savedPasted = window.localStorage.getItem(hexaPastedStorageKey);
+    
+      setIsHexaUnlocked(savedUnlocked === "true");
+      setIsHexaPasted(savedPasted === "true");
+    }, [hexaUnlockedStorageKey, hexaPastedStorageKey]);
+    
+    useEffect(() => {
+      async function loadHexaFromSupabase() {
+        const key = generateAlbumKey(shareSlug);
+    
+        setAlbumKey(key);
+    
+        const { data, error } = await supabase
+          .from("aura_album_entries")
+          .select("aura_type")
+          .eq("album_key", key)
+          .eq("aura_type", specialAura.id)
+          .maybeSingle();
+    
+        if (error) {
+          console.error(error);
+          return;
+        }
+    
+        if (data) {
+          window.localStorage.setItem(hexaUnlockedStorageKey, "true");
+          window.localStorage.setItem(hexaPastedStorageKey, "true");
+    
+          setIsHexaUnlocked(true);
+          setIsHexaPasted(true);
+        }
+      }
+    
+      loadHexaFromSupabase();
+    }, [shareSlug, hexaUnlockedStorageKey, hexaPastedStorageKey]); 
+
+    useEffect(() => {
         async function loadAlbum() {
-          const key = generateAlbumKey();
+          const key = generateAlbumKey(shareSlug);
           setAlbumKey(key);
-      
-          const localSaved = window.localStorage.getItem(LOCAL_PASTED_AURAS);
+          
+          const localSaved = window.localStorage.getItem(pastedAurasStorageKey); 
       
           if (localSaved) {
             try {
@@ -76,7 +187,7 @@ const [isSavingAura, setIsSavingAura] = useState(false);
                 setPastedAuras(parsed);
               }
             } catch {
-              window.localStorage.removeItem(LOCAL_PASTED_AURAS);
+              window.localStorage.removeItem(pastedAurasStorageKey);
             }
           }
       
@@ -94,20 +205,69 @@ const [isSavingAura, setIsSavingAura] = useState(false);
       
           setPastedAuras((current) => {
             const merged = Array.from(new Set([...current, ...remoteAuras]));
-            window.localStorage.setItem(LOCAL_PASTED_AURAS, JSON.stringify(merged));
+            window.localStorage.setItem(pastedAurasStorageKey, JSON.stringify(merged));
             return merged;
           });
         }
       
         loadAlbum();
-      }, []);
-  
+      }, [shareSlug, pastedAurasStorageKey]);
+
+      useEffect(() => {
+        async function loadHexaFriendProgress() {
+          if (!shareSlug) {
+            setHexaFriendCount(0);
+            setHexaAuraPoints(0);
+            return;
+          }  
+      
+          setIsLoadingHexaProgress(true);
+      
+          const { data: sessionData, error: sessionError } = await supabase
+  .from("aura_sessions")
+  .select("id, score")
+  .eq("share_slug", shareSlug)
+  .single();
+      
+          if (sessionError || !sessionData) {
+            console.error(sessionError);
+            setHexaFriendCount(0);
+setHexaAuraPoints(0);
+setIsLoadingHexaProgress(false);
+            return;
+          }
+      
+          const { count, error: countError } = await supabase
+            .from("friend_reviews")
+            .select("id", { count: "exact", head: true })
+            .eq("aura_session_id", sessionData.id);
+      
+          if (countError) {
+            console.error(countError);
+            setHexaFriendCount(0);
+setHexaAuraPoints(0);
+setIsLoadingHexaProgress(false);
+            return;
+          }
+      
+          const friendCount = count ?? 0;
+          const baseScore = Number(sessionData.score ?? 0);
+          const friendBonus = friendCount * 25;
+          
+          setHexaFriendCount(friendCount);
+          setHexaAuraPoints(baseScore + friendBonus);
+          setIsLoadingHexaProgress(false); 
+        }
+      
+        loadHexaFriendProgress();
+      }, [shareSlug]);
+
       async function pasteAura(auraId: string) {
         const aura = auraTypes.find((item) => item.id === auraId);
       
         if (!aura) return;
       
-        const key = albumKey || generateAlbumKey();
+        const key = albumKey || generateAlbumKey(shareSlug); 
       
         setAlbumKey(key);
         setIsSavingAura(true);
@@ -115,7 +275,10 @@ const [isSavingAura, setIsSavingAura] = useState(false);
         const nextAuras = Array.from(new Set([...pastedAuras, auraId]));
       
         setPastedAuras(nextAuras);
-        window.localStorage.setItem(LOCAL_PASTED_AURAS, JSON.stringify(nextAuras));
+        window.localStorage.setItem(
+          pastedAurasStorageKey,
+          JSON.stringify(nextAuras)
+        );
       
         const { error } = await supabase.from("aura_album_entries").upsert(
           {
@@ -145,6 +308,56 @@ const [isSavingAura, setIsSavingAura] = useState(false);
           setAlbumMessage("");
         }, 2400);
       }
+      async function pasteHexaAura() {
+        if (!isHexaUnlocked) return;
+      
+        const key = albumKey || generateAlbumKey(shareSlug);
+      
+        setAlbumKey(key);
+        setIsSavingAura(true);
+      
+        window.localStorage.setItem(hexaPastedStorageKey, "true");
+        setIsHexaPasted(true);
+      
+        const { error } = await supabase.from("aura_album_entries").upsert(
+          {
+            album_key: key,
+            aura_type: specialAura.id,
+            aura_name: specialAura.name,
+            share_slug: shareSlug,
+            source: "hexa_special_paste",
+          },
+          {
+            onConflict: "album_key,aura_type",
+          }
+        );
+      
+        setIsSavingAura(false);
+      
+        if (error) {
+          console.error(error);
+          setAlbumMessage(
+            "Aura do Hexa colada neste navegador, mas não conseguimos salvar no Supabase."
+          );
+        } else {
+          setAlbumMessage("Aura do Hexa colada como figurinha especial!");
+        }
+      
+        window.setTimeout(() => {
+          setAlbumMessage("");
+        }, 2800);
+      }
+      function unlockHexaAura() {
+        if (!canUnlockHexa) return;
+      
+        window.localStorage.setItem(hexaUnlockedStorageKey, "true");
+        setIsHexaUnlocked(true);
+        setAlbumMessage("Aura do Hexa desbloqueada!");
+      
+        window.setTimeout(() => {
+          setAlbumMessage("");
+        }, 2800);
+      } 
   
     return (
     <main className="min-h-screen overflow-hidden bg-[#090A14] text-slate-50">
@@ -197,66 +410,335 @@ const [isSavingAura, setIsSavingAura] = useState(false);
             </p>
           </div>
 
-          <div className="mt-8 rounded-[2rem] border border-yellow-300/20 bg-yellow-300/10 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
-            <div className="grid gap-6 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
-              <div
-                className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${specialAura.gradient} p-[2px] shadow-[0_0_80px_rgba(250,204,21,0.25)]`}
-              >
-                <div className="relative flex min-h-[300px] flex-col items-center justify-center overflow-hidden rounded-[1.9rem] bg-slate-950/75 p-6 text-center">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.32),transparent_45%)]" />
-                  <div className="pointer-events-none absolute left-[-20%] top-[-20%] h-40 w-40 rounded-full bg-green-300/25 blur-3xl" />
-                  <div className="pointer-events-none absolute bottom-[-25%] right-[-20%] h-44 w-44 rounded-full bg-blue-500/25 blur-3xl" />
+          <div className="mt-6 overflow-hidden rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-[2px] shadow-[0_0_70px_rgba(56,189,248,0.14)]">
+  <div className="relative overflow-hidden rounded-[1.9rem] bg-slate-950/75 p-5 backdrop-blur-xl sm:p-6">
+    <div className="pointer-events-none absolute left-[-90px] top-[-90px] h-52 w-52 rounded-full bg-cyan-300/20 blur-3xl" />
+    <div className="pointer-events-none absolute right-[-90px] bottom-[-90px] h-56 w-56 rounded-full bg-fuchsia-400/20 blur-3xl" />
+    <div className="pointer-events-none absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl" />
 
-                  <div className="relative rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-yellow-100">
-                    carta especial
-                  </div>
+    <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-200">
+          energia do álbum
+        </p>
 
-                  <div className="relative mt-8 flex h-32 w-32 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_0_70px_rgba(250,204,21,0.25)] backdrop-blur">
-                    <span className="text-7xl">{specialAura.symbol}</span>
-                  </div>
+        <h3 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+          Aura carregando...
+        </h3>
 
-                  <h3 className="relative mt-6 text-4xl font-black tracking-tight text-white">
-                    {specialAura.name}
-                  </h3>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+          Cada figurinha colada aumenta a energia do seu álbum. A Aura do Hexa
+          entra como carta especial e conta como energia rara.
+        </p>
+      </div>
 
-                  <p className="relative mt-3 text-sm font-black uppercase tracking-[0.25em] text-white/80">
-                    {specialAura.visualTitle}
-                  </p>
+      <div className="rounded-[2rem] border border-white/10 bg-white/5 px-5 py-4 text-center">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-400">
+          progresso
+        </p>
+        <p className="mt-1 text-4xl font-black text-white">
+          {albumEnergyPercent}%
+        </p>
+        <p className="mt-1 text-xs font-bold text-slate-400">
+          {collectedCards}/{totalAlbumCards} coladas
+        </p>
+      </div>
+    </div>
 
-                  <p className="relative mt-4 max-w-xs text-sm leading-6 text-slate-200">
-                    “{specialAura.phrase}”
-                  </p>
-                </div>
-              </div>
+    <div className="relative mt-6">
+      <div className="h-5 overflow-hidden rounded-full border border-white/10 bg-white/10 p-[3px]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-fuchsia-400 to-yellow-300 shadow-[0_0_35px_rgba(56,189,248,0.45)] transition-all duration-700"
+          style={{ width: `${albumEnergyPercent}%` }}
+        />
+      </div>
 
-              <div>
-                <p className="text-sm font-bold uppercase tracking-[0.3em] text-yellow-200">
-                  slot mais desejado
-                </p>
+      <div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500">
+        <span>início</span>
+        <span>aura máxima</span>
+      </div>
+    </div>
 
-                <h3 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
-                  Aura do Hexa ficará em destaque no álbum.
-                </h3>
+    <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+          base
+        </p>
+        <p className="mt-2 text-xl font-black text-white">
+          {pastedAuras.length}/{auraTypes.length}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">auras principais</p>
+      </div>
 
-                <p className="mt-4 leading-7 text-slate-300">
-                  Essa carta não entra no sorteio comum. Ela será desbloqueada
-                  por missão especial, pontos de aura ou participação dos amigos.
-                  A ideia é ela parecer rara, desejada e temporária, não só mais
-                  uma carta largada no meio do álbum como panfleto de mercado.
-                </p>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+          especial
+        </p>
+        <p
+          className={`mt-2 text-xl font-black ${
+            isHexaPasted ? "text-yellow-100" : "text-slate-500"
+          }`}
+        >
+          {isHexaPasted ? "1/1" : "0/1"}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">Aura do Hexa</p>
+      </div>
 
-                <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-                  <p className="text-sm font-bold text-yellow-100">
-                    Status: bloqueada
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-400">
-                    Futuro desbloqueio sugerido: 3 amigos responderem + presença
-                    em dias diferentes + pontos de aura.
-                  </p>
-                </div>
-              </div>
-            </div>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-500">
+          status
+        </p>
+        <p className="mt-2 text-xl font-black text-cyan-100">
+          {albumEnergyPercent >= 100
+            ? "Completo"
+            : albumEnergyPercent >= 70
+              ? "Carregado"
+              : albumEnergyPercent >= 35
+                ? "Em expansão"
+                : "Começando"}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">energia atual</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <div
+  className={`mt-8 rounded-[2rem] border p-5 shadow-2xl backdrop-blur-xl sm:p-6 ${
+    isHexaPasted
+      ? "border-yellow-300/40 bg-yellow-300/15 shadow-[0_0_80px_rgba(250,204,21,0.16)]"
+      : isHexaUnlocked
+        ? "border-emerald-300/30 bg-emerald-400/10"
+        : "border-yellow-300/25 bg-yellow-300/10"
+  }`}
+>  
+  <div className="grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
+    <div
+      className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br ${specialAura.gradient} p-[3px] shadow-[0_0_100px_rgba(250,204,21,0.32)]`}
+    >
+      <div className="relative flex min-h-[360px] flex-col items-center justify-center overflow-hidden rounded-[1.85rem] bg-slate-950/78 p-6 text-center">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.38),transparent_42%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(34,197,94,0.22),transparent_32%,rgba(250,204,21,0.18)_52%,transparent_72%,rgba(37,99,235,0.22))]" />
+        <div className="pointer-events-none absolute left-[-22%] top-[-22%] h-48 w-48 rounded-full bg-green-300/30 blur-3xl" />
+        <div className="pointer-events-none absolute right-[-18%] top-[20%] h-44 w-44 rounded-full bg-yellow-300/25 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-[-24%] left-[20%] h-52 w-52 rounded-full bg-blue-500/25 blur-3xl" />
+
+        <div className="relative flex w-full items-center justify-between gap-3">
+          <div className="rounded-full border border-yellow-200/30 bg-yellow-200/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-yellow-100">
+            carta especial
           </div>
+
+          <div className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1 text-[10px] font-black text-slate-200">
+            {specialAura.collectionNumber}
+          </div>
+        </div>
+
+        <div className="relative mt-8 flex h-36 w-36 items-center justify-center rounded-[2rem] border border-white/20 bg-white/10 shadow-[0_0_90px_rgba(250,204,21,0.34)] backdrop-blur">
+          <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.35),transparent_55%)]" />
+          <span className="relative text-7xl">{specialAura.symbol}</span>
+        </div>
+
+        <div className="relative mt-6 rounded-full border border-green-300/20 bg-green-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-green-100">
+          {specialAura.visualTitle}
+        </div>
+
+        <h3 className="relative mt-5 text-4xl font-black tracking-tight text-white sm:text-5xl">
+          {specialAura.name}
+        </h3>
+
+        <p className="relative mt-4 max-w-xs text-base font-bold leading-7 text-slate-100">
+          “{specialAura.phrase}”
+        </p>
+
+        <div className="relative mt-6 grid w-full gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+              raridade
+            </p>
+            <p className="mt-1 font-black text-yellow-100">
+              {specialAura.rarity}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+              evento
+            </p>
+            <p className="mt-1 font-black text-green-100">Copa 2026</p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+              status
+            </p>
+            <p
+  className={`mt-1 font-black ${
+    isHexaPasted
+      ? "text-yellow-100"
+      : isHexaUnlocked
+        ? "text-emerald-100"
+        : "text-slate-200"
+  }`}
+>
+  {isHexaPasted
+    ? "Colada"
+    : isHexaUnlocked
+      ? "Desbloqueada"
+      : "Bloqueada"}
+</p> 
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <p className="text-sm font-bold uppercase tracking-[0.3em] text-yellow-200">
+        slot mais desejado
+      </p>
+
+      <h3 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl">
+        A Aura do Hexa será a carta especial do Brasil 2026.
+      </h3>
+
+      <p className="mt-4 leading-7 text-slate-300">
+        Essa carta não entra no sorteio comum. Ela será desbloqueada por missão
+        especial, pontos de aura ou participação dos amigos. A ideia é ela parecer
+        rara, desejada e temporária, não só mais uma carta largada no meio do álbum
+        como panfleto de mercado.
+      </p>
+
+      {isHexaUnlocked && (
+  <div
+    className={`mt-5 rounded-2xl border p-4 ${
+      isHexaPasted
+        ? "border-yellow-300/25 bg-yellow-300/10"
+        : "border-emerald-300/20 bg-emerald-500/10"
+    }`}
+  >
+    <p
+      className={`text-sm font-black uppercase tracking-[0.25em] ${
+        isHexaPasted ? "text-yellow-100" : "text-emerald-100"
+      }`}
+    >
+      {isHexaPasted ? "figurinha especial colada" : "carta liberada"}
+    </p>
+    <p
+      className={`mt-2 text-sm leading-6 ${
+        isHexaPasted ? "text-yellow-100/80" : "text-emerald-100/80"
+      }`}
+    >
+      {isHexaPasted
+        ? "A Aura do Hexa já está colada como carta especial no seu álbum."
+        : "A Aura do Hexa foi desbloqueada. Agora você pode colar essa figurinha especial no álbum."}
+    </p>
+  </div>
+)}  
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 p-4">
+          <p className="text-sm font-black text-yellow-100">
+            Como pode desbloquear
+          </p>
+          <p className="mt-2 text-sm leading-6 text-yellow-100/80">
+            Nesta aura atual: {Math.min(hexaFriendCount, 3)}/3 amigos responderam,{" "}
+            {Math.min(hexaAuraPoints, 300)}/300 pontos de aura foram acumulados e{" "}
+            {Math.min(presenceDays, 3)}/3 dias de presença foram registrados.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+          <p className="text-sm font-black text-cyan-100">
+            Por que ela fica bloqueada
+          </p>
+          <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+            Para criar desejo, retorno e sensação de conquista. Raro sem esforço
+            vira só decoração.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+          missão de desbloqueio
+        </p>
+
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          A Aura do Hexa poderá ser liberada como carta de evento: disponível por
+          tempo limitado, com missão especial e destaque permanente no álbum de quem
+          desbloquear.
+        </p>
+
+        <div className="mt-5 grid gap-3">
+          <HexaMissionItem
+            label={
+              isLoadingHexaProgress
+                ? "Carregando respostas dos amigos"
+                : "Amigos responderam sua aura"
+            }
+            current={Math.min(hexaFriendCount, 3)}
+            target={3}
+          />
+
+          <HexaMissionItem
+            label="Dias de presença no app"
+            current={Math.min(presenceDays, 3)}
+            target={3}
+          />
+
+          <HexaMissionItem
+            label={
+              isLoadingHexaProgress
+                ? "Carregando pontos de aura"
+                : "Pontos de aura acumulados"
+            }
+            current={Math.min(hexaAuraPoints, 300)}
+            target={300}
+          />
+        </div>
+
+        {isHexaUnlocked ? (
+  <button
+    onClick={pasteHexaAura}
+    disabled={isHexaPasted || isSavingAura}
+    className={`mt-5 w-full rounded-2xl border px-5 py-4 font-black transition ${
+      isHexaPasted
+        ? "cursor-default border-yellow-300/25 bg-yellow-300/10 text-yellow-100"
+        : "border-emerald-300/25 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/15"
+    }`}
+  >
+  {isSavingAura
+  ? "Colando Aura do Hexa..."
+  : isHexaPasted
+    ? "✓ Aura do Hexa colada no álbum"
+    : "Colar Aura do Hexa no álbum"}  
+  </button>
+) : (
+  <button
+    onClick={unlockHexaAura}
+    disabled={!canUnlockHexa}
+    className={`mt-5 w-full rounded-2xl border px-5 py-4 font-black transition ${
+      canUnlockHexa
+        ? "border-yellow-300/30 bg-yellow-300/15 text-yellow-100 hover:bg-yellow-300/20"
+        : "cursor-not-allowed border-white/10 bg-white/5 text-slate-500"
+    }`}
+  >
+    {canUnlockHexa
+      ? "Desbloquear Aura do Hexa"
+      : hexaFriendCount >= 3 && hexaAuraPoints >= 300
+        ? "Falta completar dias de presença"
+        : hexaFriendCount >= 3
+          ? "Missão completa: amigos responderam"
+          : hexaAuraPoints >= 300
+            ? "Missão completa: pontos de aura"
+            : presenceDays >= 3
+              ? "Missão completa: dias de presença"
+              : "Aura do Hexa bloqueada"}
+  </button>
+)} 
+      </div>
+    </div>
+  </div>
+</div> 
 
           <div className="mt-8">
             <div className="mb-5 flex items-end justify-between gap-4">
@@ -387,6 +869,37 @@ const [isSavingAura, setIsSavingAura] = useState(false);
     </main>
   );
 }
+
+function HexaMissionItem({
+  label,
+  current,
+  target,
+}: {
+  label: string;
+  current: number;
+  target: number;
+}) {
+  const percent = Math.min(100, Math.round((current / target) * 100));
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-bold text-slate-200">{label}</p>
+        <p className="text-sm font-black text-yellow-100">
+          {current}/{target}
+        </p>
+      </div>
+
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-green-400 via-yellow-300 to-blue-500"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function AlbumPage() {
     return (
       <Suspense
