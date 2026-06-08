@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toBlob, toPng } from "html-to-image";
 import {
   type Answer,
@@ -12,20 +12,67 @@ import { supabase } from "@/lib/supabase";
 import { AuraCard } from "@/components/AuraCard";
 import { AuraShareCard } from "@/components/AuraShareCard";
 
+const LOCAL_DAILY_AURA_KEY = "aura-social-daily-aura";
+const LOCAL_LAST_AURA_LINK_KEY = "aura-social-last-aura-link";
 
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 export default function Home() {
-  const [step, setStep] = useState<"home" | "profile" | "quiz" | "result">(
-    "home"
-  );
-  const [nickname, setNickname] = useState("");
-const [currentQuestion, setCurrentQuestion] = useState(0);
-const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
-const [auraSlug, setAuraSlug] = useState("");
-const [isSaving, setIsSaving] = useState(false);
-const [saveError, setSaveError] = useState("");
-const [copyMessage, setCopyMessage] = useState("");
-const shareCardRef = useRef<HTMLDivElement | null>(null);
+  const [step, setStep] = useState<
+  "home" | "profile" | "quiz" | "result" | "daily-limit"
+>("home");  
 
+
+  const [nickname, setNickname] = useState("");
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<Answer[]>([]);
+  const [auraSlug, setAuraSlug] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
+  const [hasDailyAura, setHasDailyAura] = useState(false);
+  const [lastAuraSlug, setLastAuraSlug] = useState("");
+  const [lastAuraType, setLastAuraType] = useState(""); 
+const shareCardRef = useRef<HTMLDivElement | null>(null);
+useEffect(() => {
+  const saved = window.localStorage.getItem(LOCAL_DAILY_AURA_KEY);
+  const lastLink = window.localStorage.getItem(LOCAL_LAST_AURA_LINK_KEY);
+
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved) as {
+        date?: string;
+        slug?: string;
+        auraType?: string;
+      };
+
+      if (parsed.date === getTodayKey() && parsed.slug) {
+        setHasDailyAura(true);
+        setLastAuraSlug(parsed.slug);
+        setLastAuraType(parsed.auraType ?? "");
+      }
+    } catch {
+      window.localStorage.removeItem(LOCAL_DAILY_AURA_KEY);
+    }
+  }
+
+  if (lastLink) {
+    try {
+      const parsed = JSON.parse(lastLink) as {
+        slug?: string;
+        auraType?: string;
+      };
+
+      if (parsed.slug) {
+        setLastAuraSlug(parsed.slug);
+        setLastAuraType(parsed.auraType ?? "");
+      }
+    } catch {
+      window.localStorage.removeItem(LOCAL_LAST_AURA_LINK_KEY);
+    }
+  }
+}, []);
   const result = useMemo(() => {
     if (selectedAnswers.length < questions.length) return null;
     return calculateAura(selectedAnswers);
@@ -73,6 +120,27 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
         );
       }
   
+      window.localStorage.setItem(
+        LOCAL_DAILY_AURA_KEY,
+        JSON.stringify({
+          date: getTodayKey(),
+          slug: newSlug,
+          auraType: calculatedResult.aura.id,
+        })
+      );
+      
+      window.localStorage.setItem(
+        LOCAL_LAST_AURA_LINK_KEY,
+        JSON.stringify({
+          slug: newSlug,
+          auraType: calculatedResult.aura.id,
+        })
+      );
+      
+      setHasDailyAura(true);
+      setLastAuraSlug(newSlug);
+      setLastAuraType(calculatedResult.aura.id);
+
       setStep("result");
       return;
     }
@@ -140,7 +208,7 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
     if (!result) return;
   
     const friendLink = `${window.location.origin}/a/${auraSlug}`;
-    const shareText = `Minha Aura Social saiu: ${result.aura.name}. Agora quero ver como você me percebe. Responde aqui: ${friendLink}`;
+    const shareText = `Farmei minha Aura Social: ${result.aura.name}. Agora quero ver como você lê minha vibe. Responde aqui: ${friendLink}`;
   
     try {
       const file = await createShareCardFile();
@@ -184,12 +252,12 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
   
     const friendLink = `${window.location.origin}/a/${auraSlug}`;
   
-    const message = `Minha Aura Social saiu: ${result.aura.name}.
-  
-  "${result.aura.phrase}"
-  
-  Agora quero ver como você me percebe. Responde aqui:
-  ${friendLink}`;
+    const message = `Farmei minha Aura Social: ${result.aura.name}.
+
+    "${result.aura.phrase}"
+    
+    Agora quero ver como você lê minha vibe. Responde aqui:
+    ${friendLink}`;
   
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
   
@@ -237,23 +305,38 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
                 </h2>
 
                 <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-                  Responda algumas situações, receba sua carta de aura e depois
-                  envie para amigos revelarem como eles sentem sua presença.
+                Responda algumas situações, farme sua carta de aura e mande para a galera
+                mostrar como sente sua presença.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-  <button
-    onClick={() => setStep("profile")}
+
+    <button
+    onClick={() => {
+      if (hasDailyAura) {
+        setStep("daily-limit");
+        return;
+      }
+  
+      setStep("profile");
+    }}
     className="rounded-2xl bg-white px-6 py-4 text-base font-black text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.25)] transition hover:scale-[1.02]"
   >
-    Começar agora
+    Farmar aura de hoje
   </button>
 
-  <button
-    onClick={() => setStep("profile")}
+    <button
+    onClick={() => {
+      if (hasDailyAura) {
+        setStep("daily-limit");
+        return;
+      }
+  
+      setStep("profile");
+    }}
     className="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-base font-bold text-white backdrop-blur transition hover:bg-white/10"
   >
-    Responder sobre um amigo
+    Entrar na vibe
   </button>
 
   <a
@@ -309,6 +392,52 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
           </div>
         )}
 
+{step === "daily-limit" && (
+  <div className="flex flex-1 items-center justify-center py-12">
+    <div className="w-full max-w-2xl rounded-[2rem] border border-cyan-300/20 bg-cyan-300/10 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
+      <p className="text-sm font-black uppercase tracking-[0.3em] text-cyan-300">
+        aura de hoje revelada
+      </p>
+
+      <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">
+      Sua aura de hoje já foi farmada.
+      </h2>
+
+      <p className="mt-5 text-base leading-7 text-slate-300">
+      Volte amanhã para farmar uma nova aura. Enquanto isso, abre seu álbum,
+      manda o link para a galera e vê como seus amigos estão lendo sua vibe.
+      </p>
+
+      <div className="mt-7 grid gap-3 sm:grid-cols-2">
+        {lastAuraSlug && (
+          <a
+            href={`/resultado/${lastAuraSlug}`}
+            className="rounded-2xl bg-white px-5 py-4 text-center font-black text-slate-950 transition hover:scale-[1.01]"
+          >
+            Ver aura de hoje
+          </a>
+        )}
+
+        {lastAuraSlug && lastAuraType && (
+          <a
+            href={`/album?aura=${lastAuraType}&slug=${lastAuraSlug}`}
+            className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 px-5 py-4 text-center font-black text-yellow-100 transition hover:bg-yellow-300/15"
+          >
+            Ver meu álbum
+          </a>
+        )}
+      </div>
+
+      <button
+        onClick={() => setStep("home")}
+        className="mt-4 w-full rounded-2xl border border-white/10 px-5 py-4 font-bold text-slate-300 transition hover:bg-white/5"
+      >
+        Voltar ao início
+      </button>
+    </div>
+  </div>
+)}
+
         {step === "profile" && (
           <div className="flex flex-1 items-center justify-center py-12">
             <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
@@ -341,7 +470,7 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
                 disabled={!nickname.trim()}
                 className="mt-6 w-full rounded-2xl bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-400 px-6 py-4 text-base font-black text-white shadow-[0_0_40px_rgba(236,72,153,0.25)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Revelar minha aura
+                Farmar minha aura
               </button>
 
               <button
@@ -458,7 +587,7 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
                 <button
                   onClick={() => {
                     navigator.clipboard?.writeText(
-                      `${nickname} tirou ${result.aura.name} no Aura Social: "${result.aura.phrase}"`
+                      `${nickname} farmou ${result.aura.name} no Aura Social: "${result.aura.phrase}"`
                     );
 
                     showCopyMessage("Sua aura foi copiada.");
@@ -473,7 +602,7 @@ const shareCardRef = useRef<HTMLDivElement | null>(null);
                     const futureLink = `${window.location.origin}/a/${auraSlug}`;
 
                     navigator.clipboard?.writeText(
-                      `Minha Aura Social saiu: ${result.aura.name}. Agora quero ver como você me percebe. Responde aqui: ${futureLink}`
+                      `Farmei minha Aura Social: ${result.aura.name}. Agora quero ver como você lê minha vibe. Responde aqui: ${futureLink}`
                     );
 
                     showCopyMessage("Link para amigos copiado.");

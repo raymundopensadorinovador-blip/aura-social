@@ -23,6 +23,8 @@ const LOCAL_PRESENCE_DAYS = "aura-social-presence-days";
 const LOCAL_HEXA_UNLOCKED = "aura-social-hexa-unlocked";
 const LOCAL_HEXA_PASTED = "aura-social-hexa-pasted";
 
+const HEXA_POINTS_TARGET = 1800;
+
 function generateAlbumKey(scope?: string | null) {
   if (scope) {
     return `album-${scope}`;
@@ -81,7 +83,9 @@ const [isHexaPasted, setIsHexaPasted] = useState(false);
 const [isLoadingHexaProgress, setIsLoadingHexaProgress] = useState(false);
 
 const canUnlockHexa =
-hexaFriendCount >= 3 && hexaAuraPoints >= 300 && presenceDays >= 3;
+  hexaFriendCount >= 3 &&
+  hexaAuraPoints >= HEXA_POINTS_TARGET &&
+  presenceDays >= 3;
 const totalAlbumCards = auraTypes.length + 1;
 const collectedCards = pastedAuras.length + (isHexaPasted ? 1 : 0);
 const albumEnergyPercent = Math.min(
@@ -227,15 +231,22 @@ useEffect(() => {
   .from("aura_sessions")
   .select("id, score")
   .eq("share_slug", shareSlug)
-  .single();
-      
-          if (sessionError || !sessionData) {
-            console.error(sessionError);
-            setHexaFriendCount(0);
-setHexaAuraPoints(0);
-setIsLoadingHexaProgress(false);
-            return;
-          }
+  .maybeSingle();
+
+if (sessionError) {
+  console.error("Erro ao buscar sessão da aura:", sessionError);
+  setHexaFriendCount(0);
+  setHexaAuraPoints(0);
+  setIsLoadingHexaProgress(false);
+  return;
+}
+
+if (!sessionData) {
+  setHexaFriendCount(0);
+  setHexaAuraPoints(0);
+  setIsLoadingHexaProgress(false);
+  return;
+}
       
           const { count, error: countError } = await supabase
             .from("friend_reviews")
@@ -640,9 +651,9 @@ setIsLoadingHexaProgress(false);
             Como pode desbloquear
           </p>
           <p className="mt-2 text-sm leading-6 text-yellow-100/80">
-            Nesta aura atual: {Math.min(hexaFriendCount, 3)}/3 amigos responderam,{" "}
-            {Math.min(hexaAuraPoints, 300)}/300 pontos de aura foram acumulados e{" "}
-            {Math.min(presenceDays, 3)}/3 dias de presença foram registrados.
+          Nessa aura: {Math.min(hexaFriendCount, 3)}/3 amigos responderam,{" "}
+{Math.min(hexaAuraPoints, HEXA_POINTS_TARGET)}/{HEXA_POINTS_TARGET} pontos foram farmados e{" "}
+{Math.min(presenceDays, 3)}/3 dias de presença foram registrados. 
           </p>
         </div>
 
@@ -669,32 +680,32 @@ setIsLoadingHexaProgress(false);
         </p>
 
         <div className="mt-5 grid gap-3">
-          <HexaMissionItem
-            label={
-              isLoadingHexaProgress
-                ? "Carregando respostas dos amigos"
-                : "Amigos responderam sua aura"
-            }
-            current={Math.min(hexaFriendCount, 3)}
-            target={3}
-          />
+  <HexaMissionItem
+    label={
+      isLoadingHexaProgress
+        ? "Checando respostas da galera"
+        : "Amigos que responderam sua aura"
+    }
+    current={Math.min(hexaFriendCount, 3)}
+    target={3}
+  />
 
-          <HexaMissionItem
-            label="Dias de presença no app"
-            current={Math.min(presenceDays, 3)}
-            target={3}
-          />
+  <HexaMissionItem
+    label={
+      isLoadingHexaProgress
+        ? "Carregando pontos de aura"
+        : "Pontos de aura farmados"
+    }
+    current={Math.min(hexaAuraPoints, HEXA_POINTS_TARGET)}
+    target={HEXA_POINTS_TARGET}
+  />
 
-          <HexaMissionItem
-            label={
-              isLoadingHexaProgress
-                ? "Carregando pontos de aura"
-                : "Pontos de aura acumulados"
-            }
-            current={Math.min(hexaAuraPoints, 300)}
-            target={300}
-          />
-        </div>
+  <HexaMissionItem
+    label="Dias voltando para o app"
+    current={Math.min(presenceDays, 3)}
+    target={3}
+  />
+</div>
 
         {isHexaUnlocked ? (
   <button
@@ -722,17 +733,17 @@ setIsLoadingHexaProgress(false);
         : "cursor-not-allowed border-white/10 bg-white/5 text-slate-500"
     }`}
   >
-    {canUnlockHexa
-      ? "Desbloquear Aura do Hexa"
-      : hexaFriendCount >= 3 && hexaAuraPoints >= 300
-        ? "Falta completar dias de presença"
-        : hexaFriendCount >= 3
-          ? "Missão completa: amigos responderam"
-          : hexaAuraPoints >= 300
-            ? "Missão completa: pontos de aura"
-            : presenceDays >= 3
-              ? "Missão completa: dias de presença"
-              : "Aura do Hexa bloqueada"}
+  {canUnlockHexa
+  ? "Liberar Aura do Hexa"
+  : hexaFriendCount >= 3 && hexaAuraPoints >= HEXA_POINTS_TARGET
+    ? "Falta voltar mais dias"
+    : hexaFriendCount >= 3
+      ? "Missão feita: a galera respondeu"
+      : hexaAuraPoints >= HEXA_POINTS_TARGET
+        ? "Missão feita: pontos farmados"
+        : presenceDays >= 3
+          ? "Missão feita: presença garantida"
+          : "Aura do Hexa bloqueada"}  
   </button>
 )} 
       </div>
