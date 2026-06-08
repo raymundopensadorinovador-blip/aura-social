@@ -296,18 +296,19 @@ useEffect(() => {
           <div className="flex flex-1 items-center py-12">
             <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
               <div>
-                <div className="mb-5 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300 backdrop-blur">
-                  Descubra como você se vê e como seus amigos te percebem.
-                </div>
+              <div className="mb-5 inline-flex rounded-full border border-fuchsia-300/20 bg-fuchsia-300/10 px-4 py-2 text-sm font-bold text-fuchsia-100 backdrop-blur">
+  Quiz + carta + álbum + vibe da galera
+</div>
 
-                <h2 className="max-w-3xl text-5xl font-black leading-[0.95] tracking-tight sm:text-7xl">
-                  Qual energia você passa sem perceber?
-                </h2>
+<h2 className="max-w-3xl text-5xl font-black leading-[0.95] tracking-tight sm:text-7xl">
+  Farme sua aura e veja como a galera lê sua vibe.
+</h2>
 
-                <p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-                Responda algumas situações, farme sua carta de aura e mande para a galera
-                mostrar como sente sua presença.
-                </p>
+<p className="mt-6 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
+  Responda o quiz, ganhe uma carta de aura, mande o link para os amigos e cole
+  suas figurinhas no álbum. A Aura do Hexa fica bloqueada para quem realmente
+  carregar energia no app.
+</p>  
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
 
@@ -325,19 +326,12 @@ useEffect(() => {
     Farmar aura de hoje
   </button>
 
-    <button
-    onClick={() => {
-      if (hasDailyAura) {
-        setStep("daily-limit");
-        return;
-      }
-  
-      setStep("profile");
-    }}
-    className="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-base font-bold text-white backdrop-blur transition hover:bg-white/10"
-  >
-    Entrar na vibe
-  </button>
+  <a
+  href="#como-funciona"
+  className="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-center text-base font-bold text-white backdrop-blur transition hover:bg-white/10"
+>
+  Como funciona
+</a> 
 
   <a
     href="/album"
@@ -351,6 +345,52 @@ useEffect(() => {
                   Experiência leve de autopercepção. Não é teste psicológico,
                   diagnóstico ou avaliação clínica.
                 </p>
+                <div
+  id="como-funciona"
+  className="mt-8 grid gap-3 rounded-[2rem] border border-white/10 bg-white/5 p-4 backdrop-blur sm:grid-cols-2"
+>
+  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+    <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-300">
+      01
+    </p>
+    <h3 className="mt-2 font-black text-white">Farme sua aura</h3>
+    <p className="mt-2 text-sm leading-6 text-slate-400">
+      Responda situações rápidas e receba uma carta com sua vibe do dia.
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+    <p className="text-xs font-black uppercase tracking-[0.25em] text-fuchsia-300">
+      02
+    </p>
+    <h3 className="mt-2 font-black text-white">Mande para a galera</h3>
+    <p className="mt-2 text-sm leading-6 text-slate-400">
+      Compartilhe o link e descubra como seus amigos percebem sua presença.
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+    <p className="text-xs font-black uppercase tracking-[0.25em] text-yellow-300">
+      03
+    </p>
+    <h3 className="mt-2 font-black text-white">Cole no álbum</h3>
+    <p className="mt-2 text-sm leading-6 text-slate-400">
+      Cada aura farmada pode virar figurinha. O álbum carrega energia conforme
+      você coleciona.
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+    <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-300">
+      04
+    </p>
+    <h3 className="mt-2 font-black text-white">Libere cartas especiais</h3>
+    <p className="mt-2 text-sm leading-6 text-slate-400">
+      A Aura do Hexa exige amigos, pontos e presença. Raro sem missão é só
+      brinde digital.
+    </p>
+  </div>
+</div>
               </div>
 
               <div className="relative mx-auto w-full max-w-sm">

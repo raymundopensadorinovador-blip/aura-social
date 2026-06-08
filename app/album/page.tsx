@@ -74,15 +74,16 @@ const hexaPastedStorageKey = getScopedStorageKey(
   const [albumKey, setAlbumKey] = useState("");
   const [pastedAuras, setPastedAuras] = useState<string[]>([]);
   const [albumMessage, setAlbumMessage] = useState("");
+  const [selectedAuraId, setSelectedAuraId] = useState("");
   const [isSavingAura, setIsSavingAura] = useState(false);
   const [hexaFriendCount, setHexaFriendCount] = useState(0);
-const [hexaAuraPoints, setHexaAuraPoints] = useState(0);
-const [presenceDays, setPresenceDays] = useState(0);
-const [isHexaUnlocked, setIsHexaUnlocked] = useState(false);
-const [isHexaPasted, setIsHexaPasted] = useState(false);
-const [isLoadingHexaProgress, setIsLoadingHexaProgress] = useState(false);
+  const [hexaAuraPoints, setHexaAuraPoints] = useState(0);
+  const [presenceDays, setPresenceDays] = useState(0);
+  const [isHexaUnlocked, setIsHexaUnlocked] = useState(false);
+  const [isHexaPasted, setIsHexaPasted] = useState(false);
+  const [isLoadingHexaProgress, setIsLoadingHexaProgress] = useState(false);
 
-const canUnlockHexa =
+  const canUnlockHexa =
   hexaFriendCount >= 3 &&
   hexaAuraPoints >= HEXA_POINTS_TARGET &&
   presenceDays >= 3;
@@ -369,6 +370,60 @@ setIsLoadingHexaProgress(false);
           setAlbumMessage("");
         }, 2800);
       } 
+
+      function showAlbumMessage(message: string) {
+        setAlbumMessage(message);
+      
+        window.setTimeout(() => {
+          setAlbumMessage("");
+        }, 2400);
+      }
+      
+      function getFriendLink() {
+        if (!shareSlug) return "";
+      
+        return `${window.location.origin}/a/${shareSlug}`;
+      }
+      
+      function getResultLink() {
+        if (!shareSlug) return "";
+      
+        return `${window.location.origin}/resultado/${shareSlug}`;
+      }
+      
+      async function copyFriendLinkFromAlbum() {
+        const friendLink = getFriendLink();
+      
+        if (!friendLink) {
+          showAlbumMessage("Esse álbum não tem link de aura para compartilhar.");
+          return;
+        }
+      
+        await navigator.clipboard?.writeText(
+          `Farmei minha Aura Social. Agora quero ver como você lê minha vibe. Responde aqui: ${friendLink}`
+        );
+      
+        showAlbumMessage("Link para a galera copiado.");
+      }
+      
+      function shareAlbumOnWhatsApp() {
+        const friendLink = getFriendLink();
+      
+        if (!friendLink) {
+          showAlbumMessage("Esse álbum não tem link de aura para mandar.");
+          return;
+        }
+      
+        const message = `Farmei minha Aura Social.
+      
+      Agora quero ver como você lê minha vibe. Responde aqui:
+      ${friendLink}`;
+      
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      
+        window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+        showAlbumMessage("Abrindo WhatsApp.");
+      }
   
     return (
     <main className="min-h-screen overflow-hidden bg-[#090A14] text-slate-50">
@@ -774,9 +829,10 @@ setIsLoadingHexaProgress(false);
 
   return (
     <div
-      id={`aura-${aura.id}`}
-      key={aura.id}
-      className={`group relative scroll-mt-10 overflow-hidden rounded-[2rem] border bg-white/[0.04] p-4 transition ${
+    id={`aura-${aura.id}`}
+    key={aura.id}
+    onClick={() => setSelectedAuraId(aura.id)}
+    className={`group relative scroll-mt-10 cursor-pointer overflow-hidden rounded-[2rem] border bg-white/[0.04] p-4 transition ${
         isHighlighted
           ? "border-yellow-300/60 shadow-[0_0_50px_rgba(250,204,21,0.22)]"
           : "border-dashed border-white/15 hover:border-cyan-300/30 hover:bg-white/[0.07]"
@@ -853,22 +909,81 @@ setIsLoadingHexaProgress(false);
           : "text-slate-500"
     }`}
   >
-   {isPasted
-  ? "Essa aura já está colada no seu álbum. Mais uma figurinha para sua coleção."
+  {isPasted
+  ? "Essa aura já está colada. Toque na carta para reenviar o link ou ver o comparativo."
   : isHighlighted
     ? "Essa é a aura que saiu no seu teste. Você pode colar essa figurinha agora."
-    : "Revele essa aura para colar a figurinha neste espaço."} 
+    : "Revele essa aura para colar a figurinha neste espaço."}  
   </p>
 
   {isHighlighted && !isPasted && (
-  <button
-    onClick={() => pasteAura(aura.id)}
+    <button
+  onClick={(event) => {
+    event.stopPropagation();
+    pasteAura(aura.id);
+  }}
     disabled={isSavingAura}
     className="mt-4 w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
   >
     {isSavingAura ? "Colando..." : "Colar figurinha"}
   </button>
 )}  
+
+{selectedAuraId === aura.id && (
+  <div className="mt-4 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+    <p className="text-xs font-black uppercase tracking-[0.25em] text-cyan-200">
+      ações da carta
+    </p>
+
+    <p className="mt-2 text-sm leading-6 text-cyan-100/80">
+      Reenvie o link dessa aura, veja o comparativo ou chame mais amigos para
+      responderem sua vibe.
+    </p>
+
+    <div className="mt-4 grid gap-2">
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          copyFriendLinkFromAlbum();
+        }}
+        className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:scale-[1.01]"
+      >
+        Chamar amigos de novo
+      </button>
+
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          shareAlbumOnWhatsApp();
+        }}
+        className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/15"
+      >
+        WhatsApp
+      </button>
+
+      {shareSlug && (
+        <a
+          href={getResultLink()}
+          onClick={(event) => event.stopPropagation()}
+          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-black text-white transition hover:bg-white/10"
+        >
+          Ver comparativo
+        </a>
+      )}
+    </div>
+
+    <button
+      onClick={(event) => {
+        event.stopPropagation();
+        setSelectedAuraId("");
+      }}
+      className="mt-3 w-full rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-cyan-100/80 transition hover:bg-white/5"
+    >
+      Fechar ações
+    </button>
+  </div>
+)}
+
 </div>  
                   </div>
   );
