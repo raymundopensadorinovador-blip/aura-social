@@ -15,9 +15,20 @@ import { AuraShareCard } from "@/components/AuraShareCard";
 const LOCAL_DAILY_AURA_KEY = "aura-social-daily-aura";
 const LOCAL_LAST_AURA_LINK_KEY = "aura-social-last-aura-link";
 const LOCAL_AURA_PROFILE_KEY = "aura-social-profile";
+const LOCAL_PROFILE_STREAK_KEY = "aura-social-profile-streak";
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function getYesterdayKey() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function getProfileStreakStorageKey(profileKey: string) {
+  return `${LOCAL_PROFILE_STREAK_KEY}-${profileKey}`;
 }
 
 function generateProfileKey() {
@@ -60,6 +71,9 @@ const [profileKey, setProfileKey] = useState("");
 const [displayCode, setDisplayCode] = useState("");
 const [isRepeatedAura, setIsRepeatedAura] = useState(false);
 const [previousAuraCount, setPreviousAuraCount] = useState(0);
+const [currentStreak, setCurrentStreak] = useState(0);
+const [bestStreak, setBestStreak] = useState(0);
+const [lastPresenceDate, setLastPresenceDate] = useState("");
 const shareCardRef = useRef<HTMLDivElement | null>(null);
 useEffect(() => {
   const saved = window.localStorage.getItem(LOCAL_DAILY_AURA_KEY);
@@ -117,7 +131,12 @@ useEffect(() => {
       setLastAuraType(parsed.auraType ?? "");
       setLastAuraSlug(parsed.slug ?? "");
       setProfileKey(parsed.profileKey ?? "");
-      setDisplayCode(parsed.displayCode ?? "");  
+      setDisplayCode(parsed.displayCode ?? ""); 
+      
+      if (parsed.profileKey) {
+        registerPresenceForProfile(parsed.profileKey);
+      }
+
     } catch {
       window.localStorage.removeItem(LOCAL_AURA_PROFILE_KEY);
     }
@@ -170,6 +189,64 @@ useEffect(() => {
     }
   }
 
+  function registerPresenceForProfile(currentProfileKey: string) {
+    if (!currentProfileKey) return;
+  
+    const today = getTodayKey();
+    const yesterday = getYesterdayKey();
+    const storageKey = getProfileStreakStorageKey(currentProfileKey);
+  
+    const saved = window.localStorage.getItem(storageKey);
+  
+    let previous = {
+      lastDate: "",
+      currentStreak: 0,
+      bestStreak: 0,
+    };
+  
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as {
+          lastDate?: string;
+          currentStreak?: number;
+          bestStreak?: number;
+        };
+  
+        previous = {
+          lastDate: parsed.lastDate ?? "",
+          currentStreak: parsed.currentStreak ?? 0,
+          bestStreak: parsed.bestStreak ?? 0,
+        };
+      } catch {
+        window.localStorage.removeItem(storageKey);
+      }
+    }
+  
+    if (previous.lastDate === today) {
+      setCurrentStreak(previous.currentStreak);
+      setBestStreak(previous.bestStreak);
+      setLastPresenceDate(today);
+      return;
+    }
+  
+    const nextStreak =
+      previous.lastDate === yesterday ? previous.currentStreak + 1 : 1;
+  
+    const nextBestStreak = Math.max(previous.bestStreak, nextStreak);
+  
+    const next = {
+      lastDate: today,
+      currentStreak: nextStreak,
+      bestStreak: nextBestStreak,
+    };
+  
+    window.localStorage.setItem(storageKey, JSON.stringify(next));
+  
+    setCurrentStreak(nextStreak);
+    setBestStreak(nextBestStreak);
+    setLastPresenceDate(today);
+  }
+
   async function ensureLocalProfile() {
     const cleanName = normalizeNickname(nickname || activeNickname);
   
@@ -206,6 +283,7 @@ useEffect(() => {
     setDisplayCode(currentDisplayCode);
     setActiveNickname(cleanName);
     setNickname(cleanName);
+    registerPresenceForProfile(currentProfileKey);
   
     const { error } = await supabase.from("aura_profiles").upsert(
       {
@@ -538,6 +616,46 @@ const { error } = await supabase.from("aura_sessions").insert({
 </button>  
 </div>
 
+{activeNickname && (
+  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+    <div className="rounded-2xl border border-orange-300/20 bg-orange-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-200">
+        sequência
+      </p>
+      <p className="mt-2 text-2xl font-black text-white">
+        🔥 {currentStreak} dia{currentStreak === 1 ? "" : "s"}
+      </p>
+      <p className="mt-1 text-xs text-orange-100/70">
+        voltando para carregar aura
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-200">
+        melhor sequência
+      </p>
+      <p className="mt-2 text-2xl font-black text-white">
+        🏆 {bestStreak} dia{bestStreak === 1 ? "" : "s"}
+      </p>
+      <p className="mt-1 text-xs text-yellow-100/70">
+        seu maior combo até agora
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+        energia
+      </p>
+      <p className="mt-2 text-2xl font-black text-white">
+        ⚡ {Math.min(100, currentStreak * 12)}%
+      </p>
+      <p className="mt-1 text-xs text-cyan-100/70">
+        presença no app
+      </p>
+    </div>
+  </div>
+)}
+
 {lastAuraSlug && (
   <div className="mt-6 rounded-[2rem] border border-fuchsia-300/20 bg-fuchsia-300/10 p-5 shadow-2xl backdrop-blur-xl">
     <p className="text-xs font-black uppercase tracking-[0.28em] text-fuchsia-200">
@@ -789,6 +907,37 @@ ${friendLink}`;
               <p className="mt-4 text-slate-300">
               Hoje já deu farm. Volta amanhã para puxar uma nova aura. Enquanto isso, abre o álbum, manda o link para a galera e vê como estão lendo sua vibe.
               </p>
+
+              {activeNickname && (
+  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+    <div className="rounded-2xl border border-orange-300/20 bg-orange-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-200">
+        sequência
+      </p>
+      <p className="mt-2 text-xl font-black text-white">
+        🔥 {currentStreak} dia{currentStreak === 1 ? "" : "s"}
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-yellow-200">
+        recorde
+      </p>
+      <p className="mt-2 text-xl font-black text-white">
+        🏆 {bestStreak} dia{bestStreak === 1 ? "" : "s"}
+      </p>
+    </div>
+
+    <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+        energia
+      </p>
+      <p className="mt-2 text-xl font-black text-white">
+        ⚡ {Math.min(100, currentStreak * 12)}%
+      </p>
+    </div>
+  </div>
+)}
 
               <label className="mt-8 block text-sm font-bold text-slate-200">
                 Nome ou apelido
