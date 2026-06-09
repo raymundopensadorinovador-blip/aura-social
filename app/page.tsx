@@ -22,7 +22,11 @@ function getTodayKey() {
 export default function Home() {
   const [step, setStep] = useState<
   "home" | "profile" | "quiz" | "result" | "daily-limit"
->("home");  
+>("home");
+
+const [afterProfileAction, setAfterProfileAction] = useState<
+  "start-quiz" | "open-album" | "open-last-aura" | ""
+>(""); 
 
 
   const [nickname, setNickname] = useState("");
@@ -86,9 +90,10 @@ useEffect(() => {
       };
   
       setActiveNickname(parsed.nickname ?? "");
+      setNickname(parsed.nickname ?? "");
       setLastAuraName(parsed.auraName ?? "");
       setLastAuraType(parsed.auraType ?? "");
-      setLastAuraSlug(parsed.slug ?? "");
+      setLastAuraSlug(parsed.slug ?? ""); 
     } catch {
       window.localStorage.removeItem(LOCAL_AURA_PROFILE_KEY);
     }
@@ -100,13 +105,79 @@ useEffect(() => {
     return calculateAura(selectedAnswers);
   }, [selectedAnswers]);
 
+  function requireProfile(
+    action: "start-quiz" | "open-album" | "open-last-aura"
+  ) {
+    if (!activeNickname.trim()) {
+      setAfterProfileAction(action);
+      setStep("profile");
+      return;
+    }
+  
+    if (action === "start-quiz") {
+      if (hasDailyAura) {
+        setStep("daily-limit");
+        return;
+      }
+  
+      setStep("profile");
+      return;
+    }
+  
+    if (action === "open-album") {
+      if (lastAuraSlug && lastAuraType) {
+        window.location.href = `/album?aura=${lastAuraType}&slug=${lastAuraSlug}`;
+        return;
+      }
+  
+      setAfterProfileAction("start-quiz");
+      setStep("profile");
+      return;
+    }
+  
+    if (action === "open-last-aura") {
+      if (lastAuraSlug) {
+        window.location.href = `/resultado/${lastAuraSlug}`;
+        return;
+      }
+  
+      setAfterProfileAction("start-quiz");
+      setStep("profile");
+    }
+  }
+
   function startQuiz() {
     const cleanName = nickname.trim();
-
+  
     if (!cleanName) {
       return;
     }
-
+  
+    window.localStorage.setItem(
+      LOCAL_AURA_PROFILE_KEY,
+      JSON.stringify({
+        nickname: cleanName,
+        auraName: lastAuraName,
+        auraType: lastAuraType,
+        slug: lastAuraSlug,
+      })
+    );
+  
+    setActiveNickname(cleanName);
+  
+    if (afterProfileAction === "open-album" && lastAuraSlug && lastAuraType) {
+      setAfterProfileAction("");
+      window.location.href = `/album?aura=${lastAuraType}&slug=${lastAuraSlug}`;
+      return;
+    }
+  
+    if (afterProfileAction === "open-last-aura" && lastAuraSlug) {
+      setAfterProfileAction("");
+      window.location.href = `/resultado/${lastAuraSlug}`;
+      return;
+    }
+  
+    setAfterProfileAction("");
     setStep("quiz");
   }
 
@@ -318,9 +389,9 @@ useEffect(() => {
       Aura Social
     </p>
     <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
-      {activeNickname
-        ? `${activeNickname} · ${lastAuraName || "aura ativa"}`
-        : "Sua vibe fala antes de você."}
+    {activeNickname
+  ? `Entrando como ${activeNickname}${lastAuraName ? ` · ${lastAuraName}` : ""}`
+  : "Entre com apelido para farmar sua aura."} 
     </h1>
   </div>
 
@@ -350,15 +421,8 @@ useEffect(() => {
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
 
     <button
-    onClick={() => {
-      if (hasDailyAura) {
-        setStep("daily-limit");
-        return;
-      }
-  
-      setStep("profile");
-    }}
-    className="rounded-2xl bg-white px-6 py-4 text-base font-black text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.25)] transition hover:scale-[1.02]"
+    onClick={() => requireProfile("start-quiz")}
+     className="rounded-2xl bg-white px-6 py-4 text-base font-black text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.25)] transition hover:scale-[1.02]"
   >
     Farmar aura de hoje
   </button>
@@ -370,12 +434,12 @@ useEffect(() => {
   Como funciona
 </a> 
 
-  <a
-    href="/album"
-    className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-6 py-4 text-center text-base font-bold text-cyan-100 backdrop-blur transition hover:bg-cyan-300/15"
-  >
-    Ver álbum
-  </a>
+<button
+  onClick={() => requireProfile("open-album")}
+  className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-6 py-4 text-center text-base font-bold text-cyan-100 backdrop-blur transition hover:bg-cyan-300/15"
+>
+  Abrir álbum
+</button>  
 </div>
 
 {lastAuraSlug && (
@@ -433,12 +497,12 @@ ${friendLink}`;
         WhatsApp
       </button>
 
-      <a
-        href={`/resultado/${lastAuraSlug}`}
-        className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-center text-sm font-black text-cyan-100 transition hover:bg-cyan-300/15"
-      >
-        Ver leitura
-      </a>
+      <button
+  onClick={() => requireProfile("open-last-aura")}
+  className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-center text-sm font-black text-cyan-100 transition hover:bg-cyan-300/15"
+>
+  Ver leitura
+</button> 
     </div>
   </div>
 )}
@@ -547,7 +611,9 @@ ${friendLink}`;
       </p>
 
       <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">
-      Sua aura de hoje já foi farmada.
+      {activeNickname
+  ? `${activeNickname}, sua aura de hoje já foi farmada.`
+  : "Sua aura de hoje já foi farmada."}
       </h2>
 
       <p className="mt-5 text-base leading-7 text-slate-300">
@@ -615,13 +681,13 @@ ${friendLink}`;
         {step === "profile" && (
           <div className="flex flex-1 items-center justify-center py-12">
             <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
-                bora começar
-              </p>
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+  entrar no app
+</p> 
 
-              <h2 className="mt-4 text-4xl font-black tracking-tight">
-                Qual nome vai aparecer na sua aura?
-              </h2>
+<h2 className="mt-4 text-4xl font-black tracking-tight">
+  Quem está usando agora?
+</h2>
 
               <p className="mt-4 text-slate-300">
               Hoje já deu farm. Volta amanhã para puxar uma nova aura. Enquanto isso, abre o álbum, manda o link para a galera e vê como estão lendo sua vibe.
@@ -643,7 +709,11 @@ ${friendLink}`;
                 disabled={!nickname.trim()}
                 className="mt-6 w-full rounded-2xl bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-400 px-6 py-4 text-base font-black text-white shadow-[0_0_40px_rgba(236,72,153,0.25)] transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Farmar minha aura
+               {afterProfileAction === "open-album"
+  ? "Entrar e abrir álbum"
+  : afterProfileAction === "open-last-aura"
+    ? "Entrar e ver leitura"
+    : "Entrar e farmar aura"} 
               </button>
 
               <button
