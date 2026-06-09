@@ -19,6 +19,21 @@ const LOCAL_AURA_PROFILE_KEY = "aura-social-profile";
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
+
+function generateProfileKey() {
+  return `profile-${Math.random().toString(36).slice(2, 10)}${Date.now()
+    .toString(36)
+    .slice(-5)}`;
+}
+
+function generateDisplayCode() {
+  return Math.random().toString(36).slice(2, 6).toUpperCase();
+}
+
+function normalizeNickname(value: string) {
+  return value.trim().slice(0, 24);
+}
+
 export default function Home() {
   const [step, setStep] = useState<
   "home" | "profile" | "quiz" | "result" | "daily-limit"
@@ -41,6 +56,10 @@ const [lastAuraSlug, setLastAuraSlug] = useState("");
 const [lastAuraType, setLastAuraType] = useState("");
 const [activeNickname, setActiveNickname] = useState("");
 const [lastAuraName, setLastAuraName] = useState("");
+const [profileKey, setProfileKey] = useState("");
+const [displayCode, setDisplayCode] = useState("");
+const [isRepeatedAura, setIsRepeatedAura] = useState(false);
+const [previousAuraCount, setPreviousAuraCount] = useState(0);
 const shareCardRef = useRef<HTMLDivElement | null>(null);
 useEffect(() => {
   const saved = window.localStorage.getItem(LOCAL_DAILY_AURA_KEY);
@@ -54,7 +73,7 @@ useEffect(() => {
         slug?: string;
         auraType?: string;
       };
-
+  
       if (parsed.date === getTodayKey() && parsed.slug) {
         setHasDailyAura(true);
         setLastAuraSlug(parsed.slug);
@@ -63,7 +82,7 @@ useEffect(() => {
     } catch {
       window.localStorage.removeItem(LOCAL_DAILY_AURA_KEY);
     }
-  }
+  } 
 
   if (lastLink) {
     try {
@@ -82,8 +101,11 @@ useEffect(() => {
   }
   if (savedProfile) {
     try {
+      
       const parsed = JSON.parse(savedProfile) as {
+        profileKey?: string;
         nickname?: string;
+        displayCode?: string;
         auraName?: string;
         auraType?: string;
         slug?: string;
@@ -93,7 +115,9 @@ useEffect(() => {
       setNickname(parsed.nickname ?? "");
       setLastAuraName(parsed.auraName ?? "");
       setLastAuraType(parsed.auraType ?? "");
-      setLastAuraSlug(parsed.slug ?? ""); 
+      setLastAuraSlug(parsed.slug ?? "");
+      setProfileKey(parsed.profileKey ?? "");
+      setDisplayCode(parsed.displayCode ?? "");  
     } catch {
       window.localStorage.removeItem(LOCAL_AURA_PROFILE_KEY);
     }
@@ -146,24 +170,72 @@ useEffect(() => {
     }
   }
 
-  function startQuiz() {
-    const cleanName = nickname.trim();
+  async function ensureLocalProfile() {
+    const cleanName = normalizeNickname(nickname || activeNickname);
   
     if (!cleanName) {
-      return;
+      return null;
     }
+  
+    let currentProfileKey = profileKey;
+    let currentDisplayCode = displayCode;
+  
+    if (!currentProfileKey) {
+      currentProfileKey = generateProfileKey();
+    }
+  
+    if (!currentDisplayCode) {
+      currentDisplayCode = generateDisplayCode();
+    }
+  
+    const profilePayload = {
+      profileKey: currentProfileKey,
+      nickname: cleanName,
+      displayCode: currentDisplayCode,
+      auraName: lastAuraName,
+      auraType: lastAuraType,
+      slug: lastAuraSlug,
+    };
   
     window.localStorage.setItem(
       LOCAL_AURA_PROFILE_KEY,
-      JSON.stringify({
-        nickname: cleanName,
-        auraName: lastAuraName,
-        auraType: lastAuraType,
-        slug: lastAuraSlug,
-      })
+      JSON.stringify(profilePayload)
     );
   
+    setProfileKey(currentProfileKey);
+    setDisplayCode(currentDisplayCode);
     setActiveNickname(cleanName);
+    setNickname(cleanName);
+  
+    const { error } = await supabase.from("aura_profiles").upsert(
+      {
+        profile_key: currentProfileKey,
+        nickname: cleanName,
+        display_code: currentDisplayCode,
+        last_seen_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "profile_key",
+      }
+    );
+  
+    if (error) {
+      console.error(error);
+    }
+  
+    return {
+      profileKey: currentProfileKey,
+      nickname: cleanName,
+      displayCode: currentDisplayCode,
+    };
+  }
+
+  async function startQuiz() {
+    const profile = await ensureLocalProfile();
+  
+    if (!profile) {
+      return;
+    }
   
     if (afterProfileAction === "open-album" && lastAuraSlug && lastAuraType) {
       setAfterProfileAction("");
@@ -188,13 +260,35 @@ useEffect(() => {
     if (currentQuestion + 1 >= questions.length) {
       const newSlug = generateAuraSlug();
       const calculatedResult = calculateAura(newAnswers);
+      const profile = await ensureLocalProfile();
+
+      if (!profile) {
+        setSaveError("Coloque um apelido para farmar sua aura.");
+        return;
+      }
   
       setAuraSlug(newSlug);
       setIsSaving(true);
       setSaveError("");
+
+      const { count: previousCount, error: previousError } = await supabase
+  .from("aura_sessions")
+  .select("id", { count: "exact", head: true })
+  .eq("profile_key", profile.profileKey)
+  .eq("aura_type", calculatedResult.aura.id);
+
+if (previousError) {
+  console.error(previousError);
+}
+
+const alreadyFarmed = (previousCount ?? 0) > 0;
+
+setIsRepeatedAura(alreadyFarmed);
+setPreviousAuraCount(previousCount ?? 0);
   
-      const { error } = await supabase.from("aura_sessions").insert({
-        nickname: nickname.trim(),
+const { error } = await supabase.from("aura_sessions").insert({
+  profile_key: profile.profileKey,
+  nickname: profile.nickname, 
         aura_type: calculatedResult.aura.id,
         aura_name: calculatedResult.aura.name,
         aura_phrase: calculatedResult.aura.phrase,
@@ -212,16 +306,7 @@ useEffect(() => {
           "Sua aura apareceu, mas o link ainda não salvou. Tenta de novo daqui a pouco."
         );
       }
-  
-      window.localStorage.setItem(
-        LOCAL_DAILY_AURA_KEY,
-        JSON.stringify({
-          date: getTodayKey(),
-          slug: newSlug,
-          auraType: calculatedResult.aura.id,
-        })
-      );
-      
+     
       window.localStorage.setItem(
         LOCAL_LAST_AURA_LINK_KEY,
         JSON.stringify({
@@ -240,8 +325,10 @@ useEffect(() => {
         })
       );
       
-      setActiveNickname(nickname.trim());
-      setLastAuraName(calculatedResult.aura.name); 
+       setActiveNickname(profile.nickname);
+       setDisplayCode(profile.displayCode);
+       setProfileKey(profile.profileKey);
+       setLastAuraName(calculatedResult.aura.name);
       
       setHasDailyAura(true);
       setLastAuraSlug(newSlug);
@@ -255,6 +342,11 @@ useEffect(() => {
   }
 
   function restart() {
+    if (hasDailyAura) {
+      setStep("daily-limit");
+      return;
+    }
+  
     setStep("profile");
     setCurrentQuestion(0);
     setSelectedAnswers([]);
@@ -262,7 +354,9 @@ useEffect(() => {
     setIsSaving(false);
     setSaveError("");
     setCopyMessage("");
-  }
+    setIsRepeatedAura(false);
+    setPreviousAuraCount(0);
+  } 
 
   function showCopyMessage(message: string) {
     setCopyMessage(message);
@@ -390,8 +484,10 @@ useEffect(() => {
     </p>
     <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
     {activeNickname
-  ? `Entrando como ${activeNickname}${lastAuraName ? ` · ${lastAuraName}` : ""}`
-  : "Entre com apelido para farmar sua aura."} 
+  ? `Entrando como ${activeNickname}${
+      displayCode ? `#${displayCode}` : ""
+    }${lastAuraName ? ` · ${lastAuraName}` : ""}`
+  : "Entre com apelido para farmar sua aura."}
     </h1>
   </div>
 
@@ -616,9 +712,10 @@ ${friendLink}`;
   : "Sua aura de hoje já foi farmada."}
       </h2>
 
-      <p className="mt-5 text-base leading-7 text-slate-300">
-      Hoje já deu farm. Volta amanhã para puxar uma nova aura. Enquanto isso, abre o álbum, manda o link para a galera e vê como estão lendo sua vibe.
-      </p>
+      <p className="mt-4 text-slate-300">
+  Coloque seu nome ou apelido para o app saber qual aura está ativa neste celular.
+  Sem senha, sem cadastro e sem novela.
+</p>
 
       <div className="mt-7 grid gap-3 sm:grid-cols-2">
         {lastAuraSlug && (
@@ -779,6 +876,27 @@ ${friendLink}`;
                 score={result.score}
                 code={auraSlug}
               />
+
+{isRepeatedAura && (
+  <div className="mt-6 rounded-[2rem] border border-yellow-300/20 bg-yellow-300/10 p-5 text-center shadow-2xl backdrop-blur-xl">
+    <p className="text-sm font-black uppercase tracking-[0.28em] text-yellow-200">
+      boost aplicado
+    </p>
+
+    <h3 className="mt-3 text-3xl font-black text-white">
+      Você já tinha farmado essa aura.
+    </h3>
+
+    <p className="mt-3 text-sm leading-6 text-yellow-100/80">
+      Essa carta não veio repetida à toa. Ela ganhou mais energia no seu histórico.
+      Quanto mais essa aura aparece, mais forte ela fica na sua leitura.
+    </p>
+
+    <p className="mt-4 rounded-2xl border border-yellow-300/20 bg-yellow-300/10 px-4 py-3 text-sm font-black text-yellow-100">
+      Farmada {previousAuraCount + 1}x
+    </p>
+  </div>
+)}     
 
 <div className="mt-6 rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

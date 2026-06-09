@@ -22,6 +22,7 @@ const LOCAL_PASTED_AURAS = "aura-social-pasted-auras";
 const LOCAL_PRESENCE_DAYS = "aura-social-presence-days";
 const LOCAL_HEXA_UNLOCKED = "aura-social-hexa-unlocked";
 const LOCAL_HEXA_PASTED = "aura-social-hexa-pasted";
+const LOCAL_AURA_PROFILE_KEY = "aura-social-profile";
 
 const HEXA_POINTS_TARGET = 1800;
 
@@ -72,6 +73,7 @@ const hexaPastedStorageKey = getScopedStorageKey(
 );
   
   const [albumKey, setAlbumKey] = useState("");
+  const [profileKey, setProfileKey] = useState("");
   const [pastedAuras, setPastedAuras] = useState<string[]>([]);
   const [albumMessage, setAlbumMessage] = useState("");
   const [selectedAuraId, setSelectedAuraId] = useState("");
@@ -110,6 +112,22 @@ useEffect(() => {
   
       return () => window.clearTimeout(timer);
     }, [highlightedAura]);
+
+    useEffect(() => {
+      const savedProfile = window.localStorage.getItem(LOCAL_AURA_PROFILE_KEY);
+    
+      if (!savedProfile) return;
+    
+      try {
+        const parsed = JSON.parse(savedProfile) as {
+          profileKey?: string;
+        };
+    
+        setProfileKey(parsed.profileKey ?? "");
+      } catch {
+        window.localStorage.removeItem(LOCAL_AURA_PROFILE_KEY);
+      }
+    }, []);
 
     useEffect(() => {
       const today = new Date().toISOString().slice(0, 10);
@@ -295,6 +313,7 @@ setIsLoadingHexaProgress(false);
         const { error } = await supabase.from("aura_album_entries").upsert(
           {
             album_key: key,
+            profile_key: profileKey || null,
             aura_type: aura.id,
             aura_name: aura.name,
             share_slug: shareSlug,
@@ -334,6 +353,7 @@ setIsLoadingHexaProgress(false);
         const { error } = await supabase.from("aura_album_entries").upsert(
           {
             album_key: key,
+            profile_key: profileKey || null,
             aura_type: specialAura.id,
             aura_name: specialAura.name,
             share_slug: shareSlug,
