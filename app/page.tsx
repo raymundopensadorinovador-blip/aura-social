@@ -14,6 +14,7 @@ import { AuraShareCard } from "@/components/AuraShareCard";
 
 const LOCAL_DAILY_AURA_KEY = "aura-social-daily-aura";
 const LOCAL_LAST_AURA_LINK_KEY = "aura-social-last-aura-link";
+const LOCAL_AURA_PROFILE_KEY = "aura-social-profile";
 
 function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -32,12 +33,15 @@ export default function Home() {
   const [saveError, setSaveError] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [hasDailyAura, setHasDailyAura] = useState(false);
-  const [lastAuraSlug, setLastAuraSlug] = useState("");
-  const [lastAuraType, setLastAuraType] = useState(""); 
+const [lastAuraSlug, setLastAuraSlug] = useState("");
+const [lastAuraType, setLastAuraType] = useState("");
+const [activeNickname, setActiveNickname] = useState("");
+const [lastAuraName, setLastAuraName] = useState("");
 const shareCardRef = useRef<HTMLDivElement | null>(null);
 useEffect(() => {
   const saved = window.localStorage.getItem(LOCAL_DAILY_AURA_KEY);
   const lastLink = window.localStorage.getItem(LOCAL_LAST_AURA_LINK_KEY);
+  const savedProfile = window.localStorage.getItem(LOCAL_AURA_PROFILE_KEY);
 
   if (saved) {
     try {
@@ -72,6 +76,24 @@ useEffect(() => {
       window.localStorage.removeItem(LOCAL_LAST_AURA_LINK_KEY);
     }
   }
+  if (savedProfile) {
+    try {
+      const parsed = JSON.parse(savedProfile) as {
+        nickname?: string;
+        auraName?: string;
+        auraType?: string;
+        slug?: string;
+      };
+  
+      setActiveNickname(parsed.nickname ?? "");
+      setLastAuraName(parsed.auraName ?? "");
+      setLastAuraType(parsed.auraType ?? "");
+      setLastAuraSlug(parsed.slug ?? "");
+    } catch {
+      window.localStorage.removeItem(LOCAL_AURA_PROFILE_KEY);
+    }
+  }
+
 }, []);
   const result = useMemo(() => {
     if (selectedAnswers.length < questions.length) return null;
@@ -136,6 +158,19 @@ useEffect(() => {
           auraType: calculatedResult.aura.id,
         })
       );
+
+      window.localStorage.setItem(
+        LOCAL_AURA_PROFILE_KEY,
+        JSON.stringify({
+          nickname: nickname.trim(),
+          auraName: calculatedResult.aura.name,
+          auraType: calculatedResult.aura.id,
+          slug: newSlug,
+        })
+      );
+      
+      setActiveNickname(nickname.trim());
+      setLastAuraName(calculatedResult.aura.name); 
       
       setHasDailyAura(true);
       setLastAuraSlug(newSlug);
@@ -277,20 +312,22 @@ useEffect(() => {
       </div>
 
       <section className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8">
-        <header className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
-              Aura Social
-            </p>
-            <h1 className="mt-1 text-lg font-black tracking-tight text-white">
-              Sua vibe fala antes de você.
-            </h1>
-          </div>
+      <header className="flex items-center justify-between gap-4">
+  <div className="min-w-0">
+    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-300">
+      Aura Social
+    </p>
+    <h1 className="mt-1 truncate text-lg font-black tracking-tight text-white">
+      {activeNickname
+        ? `${activeNickname} · ${lastAuraName || "aura ativa"}`
+        : "Sua vibe fala antes de você."}
+    </h1>
+  </div>
 
-          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-            beta aberto
-          </div>
-        </header>
+  <div className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur">
+    beta aberto
+  </div>
+</header>
 
         {step === "home" && (
           <div className="flex flex-1 items-center py-12">
@@ -340,6 +377,77 @@ useEffect(() => {
     Ver álbum
   </a>
 </div>
+
+{lastAuraSlug && (
+  <div className="mt-6 rounded-[2rem] border border-fuchsia-300/20 bg-fuchsia-300/10 p-5 shadow-2xl backdrop-blur-xl">
+    <p className="text-xs font-black uppercase tracking-[0.28em] text-fuchsia-200">
+      sua aura ativa
+    </p>
+
+    <h3 className="mt-3 text-2xl font-black text-white">
+      {activeNickname
+        ? `${activeNickname}, sua carta está pronta para rodar.`
+        : "Sua carta está pronta para rodar."}
+    </h3>
+
+    <p className="mt-3 text-sm leading-6 text-fuchsia-100/80">
+      Mande o link para seus amigos responderem como leem sua vibe. Quanto mais
+      gente responde, mais forte fica sua leitura da galera.
+    </p>
+
+    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      <button
+        onClick={() => {
+          const friendLink = `${window.location.origin}/a/${lastAuraSlug}`;
+
+          navigator.clipboard?.writeText(
+            `Farmei minha Aura Social${lastAuraName ? `: ${lastAuraName}` : ""}. Quero ver como você lê minha vibe. Responde aqui: ${friendLink}`
+          );
+
+          showCopyMessage("Link da aura copiado.");
+        }}
+        className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:scale-[1.01]"
+      >
+        Copiar link
+      </button>
+
+      <button
+        onClick={() => {
+          const friendLink = `${window.location.origin}/a/${lastAuraSlug}`;
+
+          const message = `Farmei minha Aura Social${lastAuraName ? `: ${lastAuraName}` : ""}.
+
+Quero ver como você lê minha vibe. Responde aqui:
+${friendLink}`;
+
+          window.open(
+            `https://wa.me/?text=${encodeURIComponent(message)}`,
+            "_blank",
+            "noopener,noreferrer"
+          );
+
+          showCopyMessage("Abrindo WhatsApp.");
+        }}
+        className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/15"
+      >
+        WhatsApp
+      </button>
+
+      <a
+        href={`/resultado/${lastAuraSlug}`}
+        className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-center text-sm font-black text-cyan-100 transition hover:bg-cyan-300/15"
+      >
+        Ver leitura
+      </a>
+    </div>
+  </div>
+)}
+
+{copyMessage && (
+  <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-5 py-4 text-center">
+    <p className="font-bold text-emerald-100">{copyMessage}</p>
+  </div>
+)}
 
                 <p className="mt-5 text-xs leading-5 text-slate-500">
                 É uma experiência leve de autopercepção. Não é teste psicológico, diagnóstico ou avaliação clínica.
@@ -464,6 +572,34 @@ useEffect(() => {
             Abrir meu álbum
           </a>
         )}
+        {lastAuraSlug && (
+  <button
+    onClick={() => {
+      const friendLink = `${window.location.origin}/a/${lastAuraSlug}`;
+
+      const message = `Farmei minha Aura Social${lastAuraName ? `: ${lastAuraName}` : ""}.
+
+Quero ver como você lê minha vibe. Responde aqui:
+${friendLink}`;
+
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(message)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+      showCopyMessage("Abrindo WhatsApp.");
+    }}
+    className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-5 py-4 text-center font-black text-emerald-100 transition hover:bg-emerald-300/15 sm:col-span-2"
+  >
+    Mandar link no WhatsApp
+  </button>
+)}
+{copyMessage && (
+  <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-5 py-4 text-center">
+    <p className="font-bold text-emerald-100">{copyMessage}</p>
+  </div>
+)}
       </div>
 
       <button
